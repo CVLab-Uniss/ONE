@@ -1,6 +1,7 @@
 from ultralytics import YOLO
 import numpy as np
 import cv2
+from PIL import Image
 
 #https://github.com/ultralytics/ultralytics
 #https://docs.ultralytics.com/modes/predict/#inference-arguments
@@ -72,14 +73,11 @@ while(cap.isOpened()):
             
         median_frame = np.median(frames, axis=0).astype(np.uint8)
         counter = 0
-        
-        cv2.imwrite('image.jpg', median_frame)      
-        #cv2.imshow('Median Frame', median_frame)
-        #cv2.waitKey(0)
-        #cv2.destroyAllWindows()
+
+        im = Image.fromarray(median_frame)
         
         # list of Results objects
-        results = model('image.jpg', 
+        results = model.predict(im, 
                         imgsz=[frame_height, frame_width], #provato ingrandire di fattore 2 sembra meglio su 33.mp4
                         augment=True, 
                         retina_masks=True, 
@@ -98,14 +96,8 @@ while(cap.isOpened()):
                 print(model.names[label])
         else:
             print("No detected object!")
-                            
-        #cv2.waitKey(0)
         
     counter = counter + 1
     
 # Rilascia la risorsa del video
 cap.release()
-
-#cv2.imshow('Median Frame', median_frame)
-#cv2.waitKey(0)
-cv2.destroyAllWindows()
