@@ -116,6 +116,11 @@ sudo docker commit test-gpu one/ad-base:v2
 
 sudo docker run --name=DemoAD -ti --rm --runtime=nvidia --gpus all one/ad-base:v2 bash -c 'source DemoAD_start.sh'
 
+# ******************* Export dell'immagine ***************************
+sudo docker save one/ad-base:v2 | gzip > one_ad-base_v2.tar.gz
+# spostare l'immagine nella cartella del progetto su gDrive
+# Progetto ONE -> Deliverables -> Sviluppo -> Docker_img
+# https://drive.google.com/drive/folders/1tlQE4pZ97qlIT6QgKOcm2Y70yzsFFmYG?usp=drive_link 
 
 
 
