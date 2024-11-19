@@ -122,8 +122,8 @@ sudo docker save one/ad-base:v2 | gzip > one_ad-base_v2.tar.gz
 # Progetto ONE -> Deliverables -> Sviluppo -> Docker_img
 # https://drive.google.com/drive/folders/1tlQE4pZ97qlIT6QgKOcm2Y70yzsFFmYG?usp=drive_link 
 
-
-
+# ******************* Import dell'immagine ***************************
+sudo docker import /path/to/one_ad-base_v2.tar.gz 
 
 
 
