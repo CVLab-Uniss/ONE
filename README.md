@@ -38,6 +38,11 @@ sudo apt-get update
 
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
+# aggiungere l'utente al gruppo docker per evitare di dover usare "sudo"
+# Fonte: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
+sudo usermod -aG docker ${USER}
+su - ${USER}
+
 # installare il supporto per le GPU per Docker (nella macchina host)
 # Fonte: https://saturncloud.io/blog/how-to-use-gpu-from-a-docker-container-a-guide-for-data-scientists-and-software-engineers/
 # Fonte: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration
@@ -54,13 +59,13 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
 # Running a Sample Container with CUD: Your output should resemble the nvidia-smi output
-sudo docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi 
+docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi 
 
 ******************* CREAZIONE DEL CONTAINER *******************
 
 # Creare un container con CUDA e la bash
 # eseguire nell'host
-sudo docker run --name=base-container -ti --rm --runtime=nvidia --gpus all ubuntu /bin/bash
+docker run --name=base-container -ti --rm --runtime=nvidia --gpus all ubuntu /bin/bash
 
 # ******************* installazione python e pip ***********************
 
@@ -93,7 +98,7 @@ pip install ultralytics numpy pillow opencv-python opencv-python-headless
 
 # salvataggio delle modifiche apportate al container 
 # eseguire nell'host
-sudo docker commit test-gpu one/ad-base:v1
+docker commit test-gpu one/ad-base:v1
 
 # ******************* Creazione script per avvio automatico della demo *******************
 
@@ -110,21 +115,21 @@ source DemoAD_start.sh
 
 # salvataggio delle modifiche apportate al container 
 # eseguire nell'host
-sudo docker commit test-gpu one/ad-base:v2
+docker commit test-gpu one/ad-base:v2
 
 # ******************* Esecuzione del container con avvio automatico *******************
 
-sudo docker run --name=DemoAD -ti --rm --runtime=nvidia --gpus all one/ad-base:v2 bash -c 'source DemoAD_start.sh'
+docker run --name=DemoAD -ti --rm --runtime=nvidia --gpus all one/ad-base:v2 bash -c 'source DemoAD_start.sh'
 
 # ******************* Export dell'immagine ***************************
-sudo docker save one/ad-base:v2 | gzip > one_ad-base_v2.tar.gz
+docker save one/ad-base:v2 | gzip > one_ad-base_v2.tar.gz
+(oppure) docker image save one/ad-base:v2 -o one_ad-base_v2.tar.gz
 # spostare l'immagine nella cartella del progetto su gDrive
 # Progetto ONE -> Deliverables -> Sviluppo -> Docker_img
 # https://drive.google.com/drive/folders/1tlQE4pZ97qlIT6QgKOcm2Y70yzsFFmYG?usp=drive_link 
 
 # ******************* Import dell'immagine ***************************
-sudo docker import /path/to/one_ad-base_v2.tar.gz one/ad-base:v2
-
+docker load < /path/to/one_ad-base_v2.tar.gz
 
 
 
