@@ -20,7 +20,6 @@ I file sono i seguenti:
 
 # **** INSTALLAZIONE DOCKER sull'HOST **** 
 ## Installare docker
-### Fonte: https://docs.docker.com/engine/install/ubuntu/ 
 * https://docs.docker.com/engine/install/ubuntu/ 
 
 ## Add Docker's official GPG key:
@@ -40,13 +39,13 @@ echo \
     sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 ## Aggiungere l'utente al gruppo docker per evitare di dover usare "sudo"
-### Fonte: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
+* https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
     sudo usermod -aG docker ${USER}
     su - ${USER}
 
 ## Installare il supporto per le GPU per Docker (nella macchina host)
-### Fonte: https://saturncloud.io/blog/how-to-use-gpu-from-a-docker-container-a-guide-for-data-scientists-and-software-engineers/
-### Fonte: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration
+* https://saturncloud.io/blog/how-to-use-gpu-from-a-docker-container-a-guide-for-data-scientists-and-software-engineers/
+* https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration
 
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
   && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
@@ -135,7 +134,7 @@ curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dear
 
 ## Spostare l'immagine nella cartella del progetto su gDrive
 ### Progetto ONE -> Deliverables -> Sviluppo -> Docker_img
-### https://drive.google.com/drive/folders/1tlQE4pZ97qlIT6QgKOcm2Y70yzsFFmYG?usp=drive_link 
+* //drive.google.com/drive/folders/1tlQE4pZ97qlIT6QgKOcm2Y70yzsFFmYG?usp=drive_link 
 
 # **** Import dell'immagine ****
     docker load < /path/to/one_ad-base_v2.tar.gz
