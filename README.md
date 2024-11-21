@@ -18,18 +18,18 @@ I file sono i seguenti:
 - AnomalyDect.py - codice python che esegue la demo del task di Anomaly Detection
 - yolov8m.pt - modello usato per la detection
 
-******************* INSTALLAZIONE DOCKER sull'HOST ******************* 
-# Installare docker
-# Fonte: https://docs.docker.com/engine/install/ubuntu/ 
+# ******************* INSTALLAZIONE DOCKER sull'HOST ******************* 
+## Installare docker
+### Fonte: https://docs.docker.com/engine/install/ubuntu/ 
 
-# Add Docker's official GPG key:
+## Add Docker's official GPG key:
 sudo apt-get update
 sudo apt-get install ca-certificates curl
 sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
 
-# Add the repository to Apt sources:
+## Add the repository to Apt sources:
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
@@ -38,14 +38,14 @@ sudo apt-get update
 
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# aggiungere l'utente al gruppo docker per evitare di dover usare "sudo"
-# Fonte: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
+## Aggiungere l'utente al gruppo docker per evitare di dover usare "sudo"
+### Fonte: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
 sudo usermod -aG docker ${USER}
 su - ${USER}
 
-# installare il supporto per le GPU per Docker (nella macchina host)
-# Fonte: https://saturncloud.io/blog/how-to-use-gpu-from-a-docker-container-a-guide-for-data-scientists-and-software-engineers/
-# Fonte: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration
+## Installare il supporto per le GPU per Docker (nella macchina host)
+### Fonte: https://saturncloud.io/blog/how-to-use-gpu-from-a-docker-container-a-guide-for-data-scientists-and-software-engineers/
+### Fonte: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration
 
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
   && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
@@ -58,10 +58,10 @@ sudo apt-get install -y nvidia-container-toolkit
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
-# Running a Sample Container with CUD: Your output should resemble the nvidia-smi output
+## Running a Sample Container with CUD: Your output should resemble the nvidia-smi output
 docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi 
 
-******************* CREAZIONE DEL CONTAINER *******************
+# ******************* CREAZIONE DEL CONTAINER *******************
 
 # Creare un container con CUDA e la bash
 # eseguire nell'host
