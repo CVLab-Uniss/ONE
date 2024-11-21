@@ -2,6 +2,7 @@ from ultralytics import YOLO
 import numpy as np
 import cv2
 from PIL import Image
+import os
 
 #https://github.com/ultralytics/ultralytics
 #https://docs.ultralytics.com/modes/predict/#inference-arguments
@@ -37,7 +38,7 @@ model = YOLO('yolov8m.pt')
 #print(model.names)
 
 pth = "aic21-track4-train-data/"
-fname = "33.mp4" #Anomalia: Auto si ferma in corsia di ingresso
+#fname = "33.mp4" #Anomalia: Auto si ferma in corsia di ingresso
 #fname = "34.mp4" #Nessuna anomalia
 #fname = "49.mp4" #Anomalia: Auto si ferma in corsia di emergenza
 #fname = "50.mp4" #Nessuna anomalia
@@ -47,62 +48,66 @@ frameSlot = 360 #numero di frame utilizzati per il calcolo del background
 timeSlot = 3600 #numero di frame di intervallo fra un calcolo bg e l'altro (2 min di intervallo)
 counter = timeSlot
 
-cap = cv2.VideoCapture(pth+fname)
 
-# Dimensioni dei frame (altezza e larghezza)
-frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-# Numero totale di frame nel video
-frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-# Crea una matrice tridimensionale vuota per contenere i frame
-#frames = np.empty((numFrame, frame_height, frame_width, 3), dtype=np.uint8)
-frames = np.empty((frameSlot, frame_height, frame_width), dtype=np.uint8)
-
-while(cap.isOpened()):
-    ret, frame = cap.read()
-    if not ret:
-        print(f"Fine del file.")
-        break 
-          
-    if (counter%timeSlot == 0):                
-        for i in range(frameSlot):                       
-            ret, frame = cap.read()   
-            
+for fname in os.listdir(pth) :
+    if '.mp4' in fname :
+        print("Processing stream: ", fname)
+        cap = cv2.VideoCapture(pth+fname)
+        
+        # Dimensioni dei frame (altezza e larghezza)
+        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        
+        # Numero totale di frame nel video
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        # Crea una matrice tridimensionale vuota per contenere i frame
+        #frames = np.empty((numFrame, frame_height, frame_width, 3), dtype=np.uint8)
+        frames = np.empty((frameSlot, frame_height, frame_width), dtype=np.uint8)
+        
+        while(cap.isOpened()):
+            ret, frame = cap.read()
             if not ret:
-                print(f"Errore nella lettura del frame {i}.")
-                break                        
+                print(f"End of frame.\n")
+                break 
+                  
+            if (counter%timeSlot == 0):                
+                for i in range(frameSlot):                       
+                    ret, frame = cap.read()   
+                    
+                    if not ret:
+                        print(f"Error reading the frame {i}.\n")
+                        break                        
+                        
+                    frames[i] = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    
+                median_frame = np.median(frames, axis=0).astype(np.uint8)
+                counter = 0
+        
+                im = Image.fromarray(median_frame)
                 
-            frames[i] = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                # list of Results objects
+                results = model.predict(im, 
+                                imgsz=[frame_height, frame_width], #provato ingrandire di fattore 2 sembra meglio su 33.mp4
+                                augment=True, 
+                                retina_masks=True, 
+                                device=device_local,
+                                conf=0.35,
+                                classes = [0, 1, 2, 3, 5, 6, 7, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23],
+                                show=False,
+                                save=False,
+                                save_txt=False)  
+                
+                res = results[0].boxes.cls.cpu().numpy()
+                if (res.size > 0):
+                    print("Detected object:")
+                    for t in range(res.size):
+                        label = int(res[t])
+                        print(model.names[label])
+                else:
+                    print("No detected object!")
+                
+            counter = counter + 1
             
-        median_frame = np.median(frames, axis=0).astype(np.uint8)
-        counter = 0
-
-        im = Image.fromarray(median_frame)
-        
-        # list of Results objects
-        results = model.predict(im, 
-                        imgsz=[frame_height, frame_width], #provato ingrandire di fattore 2 sembra meglio su 33.mp4
-                        augment=True, 
-                        retina_masks=True, 
-                        device=device_local,
-                        conf=0.35,
-                        classes = [0, 1, 2, 3, 5, 6, 7, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23],
-                        show=False,
-                        save=False,
-                        save_txt=False)  
-        
-        res = results[0].boxes.cls.cpu().numpy()
-        if (res.size > 0):
-            print("Detected object:")
-            for t in range(res.size):
-                label = int(res[t])
-                print(model.names[label])
-        else:
-            print("No detected object!")
-        
-    counter = counter + 1
-    
-# Rilascia la risorsa del video
-cap.release()
+        # Rilascia la risorsa del video
+        cap.release()
