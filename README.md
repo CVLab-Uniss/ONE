@@ -77,7 +77,7 @@ apt-get install python3-venv
 # creare un vemv di ONE
 python3 -m venv one-env
 # attivare il venv
-source one-env/bin/activate
+source "one-env/bin/activate"
 # installare pip
 apt-get install python3-pip
 pip --version
