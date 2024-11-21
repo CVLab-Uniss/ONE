@@ -18,7 +18,7 @@ I file sono i seguenti:
 - AnomalyDect.py - codice python che esegue la demo del task di Anomaly Detection
 - yolov8m.pt - modello usato per la detection
 
-# ******************* INSTALLAZIONE DOCKER sull'HOST ******************* 
+# **** INSTALLAZIONE DOCKER sull'HOST **** 
 ## Installare docker
 ### Fonte: https://docs.docker.com/engine/install/ubuntu/ 
 
@@ -61,75 +61,80 @@ sudo systemctl restart docker
 ## Running a Sample Container with CUD: Your output should resemble the nvidia-smi output
 docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi 
 
-# ******************* CREAZIONE DEL CONTAINER *******************
+# **** CREAZIONE DEL CONTAINER ****
 
-# Creare un container con CUDA e la bash
-# eseguire nell'host
+## Creare un container con CUDA e la bash
+### Eseguire nell'host
 docker run --name=base-container -ti --rm --runtime=nvidia --gpus all ubuntu /bin/bash
 
-# ******************* installazione python e pip ***********************
+# **** Installazione python e pip ****
 
-# python
+## python
 apt-get install python3
 python3 --version
-# installare virtual environment
+
+## installare virtual environment
 apt-get install python3-venv
-# creare un vemv di ONE
+
+## creare un vemv di ONE
 python3 -m venv one-env
-# attivare il venv
+
+## attivare il venv
 source "one-env/bin/activate"
-# installare pip
+
+## installare pip
 apt-get install python3-pip
 pip --version
 
-# ******************* clone del porgetto ONE ***********************
+# **** clone del porgetto ONE ****
 
-# installare git e nano
+## Installare git e nano
 apt install git nano
-# clonare il progetto dal repo di UNISS
-git clone https://github.com/CVLab-Uniss/ONE.git
-# inserire username e password 
-# utilizzare un utente associato al progetto
-# per la password utilizzare un token generato dal proprio account di git hub
-# settings -> development settings -> personal access token -> tokens (classic)
 
-# installazione requirements per Demo_AD
+## Clonare il progetto dal repo di UNISS
+git clone https://github.com/CVLab-Uniss/ONE.git
+
+## Inserire username e password 
+### Utilizzare un utente associato al progetto
+### Per la password utilizzare un token generato dal proprio account di git hub
+### settings -> development settings -> personal access token -> tokens (classic)
+
+## Installazione requirements per Demo_AD
 pip install ultralytics numpy pillow opencv-python opencv-python-headless 
 
-# salvataggio delle modifiche apportate al container 
-# eseguire nell'host
+## salvataggio delle modifiche apportate al container 
+### eseguire nell'host
 docker commit test-gpu one/ad-base:v1
 
-# ******************* Creazione script per avvio automatico della demo *******************
-
+# **** Creazione script per avvio automatico della demo ****
 nano DemoAD_start.sh
-# copiare il seguente testo
+
+## Copiare il seguente testo
 #!/bin/sh
 source "one-env/bin/activate"
 cd /ONE/Demo_AD/
 python AnomalyDect.py
-# test dello script
-# uscire dall venv e lanciare lo script
+
+## Test dello script
+## Uscire dall venv e lanciare lo script
 deactivate
 source DemoAD_start.sh
 
-# salvataggio delle modifiche apportate al container 
-# eseguire nell'host
+## Salvataggio delle modifiche apportate al container 
+## Eseguire nell'host
 docker commit test-gpu one/ad-base:v2
 
-# ******************* Esecuzione del container con avvio automatico *******************
+# **** Esecuzione del container con avvio automatico ****
 
 docker run --name=DemoAD -ti --rm --runtime=nvidia --gpus all one/ad-base:v2 bash -c 'source DemoAD_start.sh'
 
-# ******************* Export dell'immagine ***************************
+# **** Export dell'immagine *****
 docker save one/ad-base:v2 | gzip > one_ad-base_v2.tar.gz
 (oppure) docker image save one/ad-base:v2 -o one_ad-base_v2.tar.gz
-# spostare l'immagine nella cartella del progetto su gDrive
-# Progetto ONE -> Deliverables -> Sviluppo -> Docker_img
-# https://drive.google.com/drive/folders/1tlQE4pZ97qlIT6QgKOcm2Y70yzsFFmYG?usp=drive_link 
 
-# ******************* Import dell'immagine ***************************
+## Spostare l'immagine nella cartella del progetto su gDrive
+### Progetto ONE -> Deliverables -> Sviluppo -> Docker_img
+### https://drive.google.com/drive/folders/1tlQE4pZ97qlIT6QgKOcm2Y70yzsFFmYG?usp=drive_link 
+
+# **** Import dell'immagine ****
 docker load < /path/to/one_ad-base_v2.tar.gz
-
-
-
