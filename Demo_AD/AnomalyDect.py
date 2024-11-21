@@ -38,8 +38,9 @@ fname = "33.mp4" #Anomalia: Auto si ferma in corsia di ingresso
 #fname = "49.mp4" #Anomalia: Auto si ferma in corsia di emergenza
 #fname = "50.mp4" #Nessuna anomalia
 
+# frame rate 30 frame/sec
 frameSlot = 360 #numero di frame utilizzati per il calcolo del background
-timeSlot = 3600 #numero di frame di intervallo fra un calcolo bg e l'altro
+timeSlot = 3600 #numero di frame di intervallo fra un calcolo bg e l'altro (2 min di intervallo)
 counter = timeSlot
 
 cap = cv2.VideoCapture(pth+fname)
