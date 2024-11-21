@@ -18,6 +18,8 @@ I file sono i seguenti:
 - AnomalyDect.py - codice python che esegue la demo del task di Anomaly Detection
 - yolov8m.pt - modello usato per la detection
 
+<hr>
+
 # **** INSTALLAZIONE DOCKER sull'HOST **** 
 ## Installare docker
 * https://docs.docker.com/engine/install/ubuntu/ 
@@ -40,8 +42,9 @@ echo \
 
 ## Aggiungere l'utente al gruppo docker per evitare di dover usare "sudo"
 * https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
-
+<br>
     sudo usermod -aG docker ${USER}
+<br>
     su - ${USER}
 
 ## Installare il supporto per le GPU per Docker (nella macchina host)
@@ -50,8 +53,8 @@ echo \
 
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
   && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
-    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+  sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+  sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
     sudo apt-get update
     sudo apt-get install -y nvidia-container-toolkit
@@ -130,8 +133,10 @@ curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dear
 
 # **** Export dell'immagine *****
     docker save one/ad-base:v2 | gzip > one_ad-base_v2.tar.gz
-    
-    (oppure) docker image save one/ad-base:v2 -o one_ad-base_v2.tar.gz
+<br>
+(oppure)
+<br>
+    docker image save one/ad-base:v2 -o one_ad-base_v2.tar.gz
 
 ## Spostare l'immagine nella cartella del progetto su gDrive
 ### Progetto ONE -> Deliverables -> Sviluppo -> Docker_img
