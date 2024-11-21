@@ -40,6 +40,7 @@ echo \
 
 ## Aggiungere l'utente al gruppo docker per evitare di dover usare "sudo"
 * https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
+
     sudo usermod -aG docker ${USER}
     su - ${USER}
 
@@ -134,7 +135,7 @@ curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dear
 
 ## Spostare l'immagine nella cartella del progetto su gDrive
 ### Progetto ONE -> Deliverables -> Sviluppo -> Docker_img
-* //drive.google.com/drive/folders/1tlQE4pZ97qlIT6QgKOcm2Y70yzsFFmYG?usp=drive_link 
+### //drive.google.com/drive/folders/1tlQE4pZ97qlIT6QgKOcm2Y70yzsFFmYG?usp=drive_link 
 
 # **** Import dell'immagine ****
     docker load < /path/to/one_ad-base_v2.tar.gz
