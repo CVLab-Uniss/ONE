@@ -27,6 +27,10 @@ from PIL import Image
  97    0 890 Auto ferme in corsia emergenza
  '''
 
+#load the model and processor
+device_local = "cpu"
+#device_local = "cuda"
+
 model = YOLO('yolov8m.pt')
 
 #lista delle classi
@@ -38,8 +42,9 @@ fname = "33.mp4" #Anomalia: Auto si ferma in corsia di ingresso
 #fname = "49.mp4" #Anomalia: Auto si ferma in corsia di emergenza
 #fname = "50.mp4" #Nessuna anomalia
 
+# frame rate 30 frame/sec
 frameSlot = 360 #numero di frame utilizzati per il calcolo del background
-timeSlot = 3600 #numero di frame di intervallo fra un calcolo bg e l'altro
+timeSlot = 3600 #numero di frame di intervallo fra un calcolo bg e l'altro (2 min di intervallo)
 counter = timeSlot
 
 cap = cv2.VideoCapture(pth+fname)
@@ -81,7 +86,7 @@ while(cap.isOpened()):
                         imgsz=[frame_height, frame_width], #provato ingrandire di fattore 2 sembra meglio su 33.mp4
                         augment=True, 
                         retina_masks=True, 
-                        device=0,
+                        device=device_local,
                         conf=0.35,
                         classes = [0, 1, 2, 3, 5, 6, 7, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23],
                         show=False,
