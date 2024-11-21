@@ -31,7 +31,7 @@ I file sono i seguenti:
     sudo chmod a+r /etc/apt/keyrings/docker.asc
 
 ## Add the repository to Apt sources:
-    echo \
+echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
@@ -48,7 +48,7 @@ I file sono i seguenti:
 ### Fonte: https://saturncloud.io/blog/how-to-use-gpu-from-a-docker-container-a-guide-for-data-scientists-and-software-engineers/
 ### Fonte: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration
 
-    curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
   && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
@@ -60,40 +60,40 @@ I file sono i seguenti:
     sudo systemctl restart docker
 
 ## Running a Sample Container with CUD: Your output should resemble the nvidia-smi output
-docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi 
+    docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi 
 
 # **** CREAZIONE DEL CONTAINER ****
 
 ## Creare un container con CUDA e la bash
 ### Eseguire nell'host
-docker run --name=base-container -ti --rm --runtime=nvidia --gpus all ubuntu /bin/bash
+    docker run --name=base-container -ti --rm --runtime=nvidia --gpus all ubuntu /bin/bash
 
 # **** Installazione python e pip ****
 
 ## python
-apt-get install python3
-python3 --version
+    apt-get install python3
+    python3 --version
 
 ## installare virtual environment
-apt-get install python3-venv
+    apt-get install python3-venv
 
 ## creare un vemv di ONE
-python3 -m venv one-env
+    python3 -m venv one-env
 
 ## attivare il venv
-source "one-env/bin/activate"
+    source "one-env/bin/activate"
 
 ## installare pip
-apt-get install python3-pip
-pip --version
+    apt-get install python3-pip
+    pip --version
 
-# **** clone del porgetto ONE ****
+# **** Clone del porgetto ONE ****
 
 ## Installare git e nano
-apt install git nano
+    apt install git nano
 
 ## Clonare il progetto dal repo di UNISS
-git clone https://github.com/CVLab-Uniss/ONE.git
+    git clone https://github.com/CVLab-Uniss/ONE.git
 
 ## Inserire username e password 
 ### Utilizzare un utente associato al progetto
@@ -101,41 +101,41 @@ git clone https://github.com/CVLab-Uniss/ONE.git
 ### settings -> development settings -> personal access token -> tokens (classic)
 
 ## Installazione requirements per Demo_AD
-pip install ultralytics numpy pillow opencv-python opencv-python-headless 
+    pip install ultralytics numpy pillow opencv-python opencv-python-headless 
 
 ## salvataggio delle modifiche apportate al container 
 ### eseguire nell'host
-docker commit test-gpu one/ad-base:v1
+    docker commit test-gpu one/ad-base:v1
 
 # **** Creazione script per avvio automatico della demo ****
-nano DemoAD_start.sh
+    nano DemoAD_start.sh
 
 ## Copiare il seguente testo
-#!/bin/sh
-source "one-env/bin/activate"
-cd /ONE/Demo_AD/
-python AnomalyDect.py
+    #!/bin/sh
+    source "one-env/bin/activate"
+    cd /ONE/Demo_AD/
+    python AnomalyDect.py
 
 ## Test dello script
 ## Uscire dall venv e lanciare lo script
-deactivate
-source DemoAD_start.sh
+    deactivate
+    source DemoAD_start.sh
 
 ## Salvataggio delle modifiche apportate al container 
 ## Eseguire nell'host
-docker commit test-gpu one/ad-base:v2
+    docker commit test-gpu one/ad-base:v2
 
 # **** Esecuzione del container con avvio automatico ****
-
-docker run --name=DemoAD -ti --rm --runtime=nvidia --gpus all one/ad-base:v2 bash -c 'source DemoAD_start.sh'
+    docker run --name=DemoAD -ti --rm --runtime=nvidia --gpus all one/ad-base:v2 bash -c 'source DemoAD_start.sh'
 
 # **** Export dell'immagine *****
-docker save one/ad-base:v2 | gzip > one_ad-base_v2.tar.gz
-(oppure) docker image save one/ad-base:v2 -o one_ad-base_v2.tar.gz
+    docker save one/ad-base:v2 | gzip > one_ad-base_v2.tar.gz
+    
+    (oppure) docker image save one/ad-base:v2 -o one_ad-base_v2.tar.gz
 
 ## Spostare l'immagine nella cartella del progetto su gDrive
 ### Progetto ONE -> Deliverables -> Sviluppo -> Docker_img
 ### https://drive.google.com/drive/folders/1tlQE4pZ97qlIT6QgKOcm2Y70yzsFFmYG?usp=drive_link 
 
 # **** Import dell'immagine ****
-docker load < /path/to/one_ad-base_v2.tar.gz
+    docker load < /path/to/one_ad-base_v2.tar.gz
