@@ -22,7 +22,15 @@ To run the Python code, download the fine-tuned model from the following locatio
 
 ## Installation Instructions
 
-For installing Docker in the base system, follow steps 1 and 2 in the README of the ONE project.
+For installing Docker in the base system, follow step 1 in the README of the ONE project.
+
+---
+
+### **2. Create a Docker Container with CUDA**
+To create a container with CUDA and access the Bash shell:
+```bash
+docker run --name=base-container -ti --rm --runtime=nvidia --gpus all ubuntu /bin/bash
+```
 
 ---
 
