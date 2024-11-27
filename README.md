@@ -81,13 +81,3 @@ Ensure GPU support is working by running:
 docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
 ```
 
----
-
-### **2. Create a Docker Container with CUDA**
-To create a container with CUDA and access the Bash shell:
-```bash
-docker run --name=base-container -ti --rm --runtime=nvidia --gpus all ubuntu /bin/bash
-```
-
----
-
