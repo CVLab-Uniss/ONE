@@ -1,2 +1,2 @@
-Demo_ReID/test_full.pth
-Demo_AD/one_ad-base_v2.tar.gz
+Demo_ReID/*.pth 
+Demo_AD/*.tar.gz
