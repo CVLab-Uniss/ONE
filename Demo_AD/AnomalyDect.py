@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 from PIL import Image
 import os
+import math
 
 #https://github.com/ultralytics/ultralytics
 #https://docs.ultralytics.com/modes/predict/#inference-arguments
@@ -48,6 +49,30 @@ frameSlot = 360 #numero di frame utilizzati per il calcolo del background
 timeSlot = 3600 #numero di frame di intervallo fra un calcolo bg e l'altro (2 min di intervallo)
 counter = timeSlot
 
+def add_margin(pil_img, top, right, bottom, left, color):
+    width, height = pil_img.size
+    new_width = width + right + left
+    new_height = height + top + bottom
+    result = Image.new(pil_img.mode, (new_width, new_height), color)
+    result.paste(pil_img, (left, top))
+    return result
+
+# funzione per aggiungere il padding e rendere l'immagine compatibile con l'input del modello.
+# Il modello accetta in ingresso immagini con H e W multipli di 32.
+
+def preProcImg(image):
+    width, height = image.size
+    newsize = (416, 800)
+    rw = 32 - (width%32) if width%32 != 0 else 0 
+    rh = 32 - (height%32) if height%32 != 0 else 0
+    t = math.ceil(rh/2) # arrotondamento intero superiore 
+    b = math.floor(rh/2) # arrotondamento intero inferiore
+    l = math.ceil(rw/2) 
+    r = math.floor(rw/2)    
+    image_res = add_margin(image, t, r, b, l, 0)
+    
+    return image_res
+
 
 for fname in os.listdir(pth) :
     if '.mp4' in fname :
@@ -62,7 +87,6 @@ for fname in os.listdir(pth) :
         frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         
         # Crea una matrice tridimensionale vuota per contenere i frame
-        #frames = np.empty((numFrame, frame_height, frame_width, 3), dtype=np.uint8)
         frames = np.empty((frameSlot, frame_height, frame_width), dtype=np.uint8)
         
         while(cap.isOpened()):
@@ -76,7 +100,7 @@ for fname in os.listdir(pth) :
                     ret, frame = cap.read()   
                     
                     if not ret:
-                        print(f"Error reading the frame {i}.\n")
+                        print(f"Error reading the frame {i}.")
                         break                        
                         
                     frames[i] = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -85,10 +109,12 @@ for fname in os.listdir(pth) :
                 counter = 0
         
                 im = Image.fromarray(median_frame)
+                im = preProcImg(im)
+                frame_width, frame_height = im.size
                 
                 # list of Results objects
                 results = model.predict(im, 
-                                imgsz=[frame_height, frame_width], #provato ingrandire di fattore 2 sembra meglio su 33.mp4
+                                imgsz=[frame_height, frame_width], 
                                 augment=True, 
                                 retina_masks=True, 
                                 device=device_local,
@@ -96,7 +122,8 @@ for fname in os.listdir(pth) :
                                 classes = [0, 1, 2, 3, 5, 6, 7, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23],
                                 show=False,
                                 save=False,
-                                save_txt=False)  
+                                save_txt=False,
+                                verbose=False)  
                 
                 res = results[0].boxes.cls.cpu().numpy()
                 if (res.size > 0):
@@ -105,7 +132,7 @@ for fname in os.listdir(pth) :
                         label = int(res[t])
                         print(model.names[label])
                 else:
-                    print("No detected object!")
+                    print("Detected object: None")
                 
             counter = counter + 1
             
