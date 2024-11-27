@@ -84,10 +84,15 @@ You will need a GitHub username and password. Use a personal access token genera
 
 ---
 
-### **5. Install Required Python Packages for Demo_AD**
-Install the necessary dependencies for the Anomaly Detection task:
+### **5. Install Required Python Packages for Demo_ReID**
+Install the necessary dependencies for the Re-Identification task:
 ```bash
-pip install ultralytics numpy pillow opencv-python opencv-python-headless
+pip install pandas transformers faiss-cpu torch Pillow torchvision matplotlib
+```
+
+Copy the pretrained model on the container
+```bash
+docker cp test_full.pth base-container:/ONE/Demo_ReID
 ```
 
 ---
@@ -95,7 +100,7 @@ pip install ultralytics numpy pillow opencv-python opencv-python-headless
 ### **6. Save Changes to the Docker Container**
 To save the current state of your container:
 ```bash
-docker commit test-gpu one/ad-base:v1
+docker commit test-gpu one/reid-base:v1
 ```
 
 ---
