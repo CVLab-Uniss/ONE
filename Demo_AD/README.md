@@ -133,7 +133,7 @@ docker image save one/ad-base:v2 -o one_ad-base_v2.tar.gz
 ```
 
 #### Move the Image to Google Drive:
-Upload the image to the **ONE** project folder on Google Drive:
+Upload the image to the ONE project folder on Google Drive:
 [Google Drive Folder](https://drive.google.com/drive/folders/1tlQE4pZ97qlIT6QgKOcm2Y70yzsFFmYG?usp=drive_link)
 
 #### NB: move as soon as possible the file to another directory since it is not synchronized with git and fetching updates from server could delete this file.
