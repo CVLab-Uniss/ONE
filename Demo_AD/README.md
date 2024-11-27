@@ -33,6 +33,7 @@ docker run --name=base-container -ti --rm --runtime=nvidia --gpus all ubuntu /bi
 
 #### Install Python:
 ```bash
+apt-get update
 apt-get install python3
 python3 --version
 ```
