@@ -29,7 +29,7 @@ For installing Docker in the base system, follow step 1 in the README of the ONE
 ### **2. Create a Docker Container with CUDA**
 To create a container with CUDA and access the Bash shell:
 ```bash
-docker run --name=base-container -ti --rm --runtime=nvidia --gpus all ubuntu /bin/bash
+docker run --name=base-container -ti --runtime=nvidia --gpus all ubuntu /bin/bash
 ```
 
 ---
@@ -90,7 +90,7 @@ Install the necessary dependencies for the Re-Identification task:
 pip install pandas transformers faiss-cpu torch Pillow torchvision matplotlib
 ```
 
-Copy the pretrained model on the container
+To copy the pretrained model on the container **run this command from the HOST system.**
 ```bash
 docker cp test_full.pth base-container:/ONE/Demo_ReID
 ```
@@ -98,9 +98,9 @@ docker cp test_full.pth base-container:/ONE/Demo_ReID
 ---
 
 ### **6. Save Changes to the Docker Container**
-To save the current state of your container:
+To save the current state of your container **run this command from the HOST system.**:
 ```bash
-docker commit test-gpu one/reid-base:v1
+docker commit base-container one/reid-base:v1docker
 ```
 
 ---
