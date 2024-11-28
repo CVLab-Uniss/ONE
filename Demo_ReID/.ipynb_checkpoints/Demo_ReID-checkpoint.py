@@ -83,9 +83,9 @@ faiss.normalize_L2(vector)
 # new vector without the query image (camera num 14)
 camera_vect = [2, 30, 39, 102, 3, 172, 23, 137, 79, 34, 78, 41, 51, 111, 110, 94, 139, 163, 122, 81]
 
-datasetPath =  '/home/visionlab/CondaWS/Datasets/VeRI-Wild/images/Demo_cameras/'
+datasetPath =  'Demo_cameras/'
 print("Query image (vehicle id: ", img_id, ")")
-display(testimg_or)
+#display(testimg_or)
 
 for cam in camera_vect:
     #print("Camera id:", cam)
@@ -135,7 +135,7 @@ for cam in camera_vect:
         df_filt = df.loc[df['img'].str.contains(images[bestIdx].split('/')[-1])]
         img_id = df_filt['img'].values[0].split('/')[0]
         print("Query vehicle found in camera num. ", cam, " (vehicle id:", img_id,")")
-        display(image)
+        #display(image)
     else:
         bestIdx = indexes[0][0]
         image = Image.open(images[bestIdx])
