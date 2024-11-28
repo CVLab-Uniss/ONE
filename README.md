@@ -80,4 +80,5 @@ Ensure GPU support is working by running:
 ```bash
 docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
 ```
-
+#### NB: if you want to install docker in a different directory than /var/lib/docker follow the instruction at 
+https://medium.com/@calvineotieno010/change-docker-default-root-data-directory-a1d9271056f4

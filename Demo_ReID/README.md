@@ -29,7 +29,7 @@ For installing Docker in the base system, follow step 1 in the README of the ONE
 ### **2. Create a Docker Container with CUDA**
 To create a container with CUDA and access the Bash shell:
 ```bash
-docker run --name=base-container -ti --rm --runtime=nvidia --gpus all ubuntu /bin/bash
+docker run --name=base-container -ti --runtime=nvidia --gpus all ubuntu /bin/bash
 ```
 
 ---
@@ -90,7 +90,7 @@ Install the necessary dependencies for the Re-Identification task:
 pip install pandas transformers faiss-cpu torch Pillow torchvision matplotlib
 ```
 
-Copy the pretrained model on the container
+To copy the pretrained model on the container **run this command from the HOST system.**
 ```bash
 docker cp test_full.pth base-container:/ONE/Demo_ReID
 ```
@@ -98,38 +98,42 @@ docker cp test_full.pth base-container:/ONE/Demo_ReID
 ---
 
 ### **6. Save Changes to the Docker Container**
-To save the current state of your container:
+To save the current state of your container **run this command from the HOST system.**:
 ```bash
-docker commit test-gpu one/reid-base:v1
+docker commit base-container one/reid-base:v1
 ```
 
 ---
 
 ### **7. Create an Auto-Start Script for the Demo**
 
-#### Create a new script `DemoAD_start.sh`:
+#### Create a new script `DemoReID_start.sh`:
 ```bash
-nano DemoAD_start.sh
+nano DemoReID_start.sh
 ```
 
 #### Paste the following content:
 ```bash
 #!/bin/sh
 source "one-env/bin/activate"
-cd /ONE/Demo_AD/
-python AnomalyDect.py
+cd /ONE/Demo_ReID/
+python Demo_ReID.py
+```
+#### Make the script executable
+```bash
+chmod +x DemoReID_start.sh
 ```
 
 #### Test the Script:
 Deactivate the virtual environment, then run the script:
 ```bash
 deactivate
-source DemoAD_start.sh
+source DemoReID_start.sh
 ```
 
 #### Save the Changes:
 ```bash
-docker commit test-gpu one/ad-base:v2
+docker commit test-gpu one/reid-base:v2
 ```
 
 ---
@@ -137,7 +141,7 @@ docker commit test-gpu one/ad-base:v2
 ### **8. Run the Container with Auto-Start**
 To run the container with the auto-start script:
 ```bash
-docker run --name=DemoAD -ti --rm --runtime=nvidia --gpus all one/ad-base:v2 bash -c 'source DemoAD_start.sh'
+docker run --name=DemoReID -ti --rm --runtime=nvidia --gpus all one/reid-base:v2 bash -c 'source DemoReID_start.sh'
 ```
 
 ---
@@ -145,12 +149,12 @@ docker run --name=DemoAD -ti --rm --runtime=nvidia --gpus all one/ad-base:v2 bas
 ### **9. Export the Docker Image**
 To export the Docker image as a `.tar.gz` file:
 ```bash
-docker save one/ad-base:v2 | gzip > one_ad-base_v2.tar.gz
+docker save one/reid-base:v2 | gzip > one_reid-base_v2.tar.gz
 ```
 or
 ```bash
-docker image save one/ad-base:v2 -o one_ad-base_v2.tar.gz
-```
+docker image save one/reid-base:v2 -o one_reid-base_v2.tar.gz
+```dokcer 
 
 #### Move the Image to Google Drive:
 Upload the image to the ONE project folder on Google Drive:
@@ -163,7 +167,7 @@ Upload the image to the ONE project folder on Google Drive:
 ### **10. Import the Docker Image**
 To load the Docker image on a new system:
 ```bash
-docker load < /path/to/one_ad-base_v2.tar.gz
+docker load < /path/to/one_reid-base_v2.tar.gz
 ```
 
 ---

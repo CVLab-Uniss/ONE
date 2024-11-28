@@ -109,6 +109,11 @@ cd /ONE/Demo_AD/
 python AnomalyDect.py
 ```
 
+#### Make the script executable
+```bash
+chmod +x DemoAD_start.sh
+```
+
 #### Test the Script:
 Deactivate the virtual environment, then run the script:
 ```bash
