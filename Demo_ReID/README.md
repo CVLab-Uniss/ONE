@@ -100,36 +100,40 @@ docker cp test_full.pth base-container:/ONE/Demo_ReID
 ### **6. Save Changes to the Docker Container**
 To save the current state of your container **run this command from the HOST system.**:
 ```bash
-docker commit base-container one/reid-base:v1docker
+docker commit base-container one/reid-base:v1
 ```
 
 ---
 
 ### **7. Create an Auto-Start Script for the Demo**
 
-#### Create a new script `DemoAD_start.sh`:
+#### Create a new script `DemoReID_start.sh`:
 ```bash
-nano DemoAD_start.sh
+nano DemoReID_start.sh
 ```
 
 #### Paste the following content:
 ```bash
 #!/bin/sh
 source "one-env/bin/activate"
-cd /ONE/Demo_AD/
-python AnomalyDect.py
+cd /ONE/Demo_ReID/
+python Demo_ReID.py
+```
+Make the script executable
+```bash
+chmod +x DemoReID_start.sh
 ```
 
 #### Test the Script:
 Deactivate the virtual environment, then run the script:
 ```bash
 deactivate
-source DemoAD_start.sh
+source DemoReID_start.sh
 ```
 
 #### Save the Changes:
 ```bash
-docker commit test-gpu one/ad-base:v2
+docker commit test-gpu one/reid-base:v2
 ```
 
 ---
