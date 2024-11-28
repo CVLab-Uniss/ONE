@@ -83,6 +83,8 @@ faiss.normalize_L2(vector)
 # new vector without the query image (camera num 14)
 camera_vect = [2, 30, 39, 102, 3, 172, 23, 137, 79, 34, 78, 41, 51, 111, 110, 94, 139, 163, 122, 81]
 
+print("DEVICE used: ", device)
+
 datasetPath =  'Demo_cameras/'
 print("Query image (vehicle id: ", img_id, ")")
 #display(testimg_or)
