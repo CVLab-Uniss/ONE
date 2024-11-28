@@ -141,7 +141,7 @@ docker commit test-gpu one/reid-base:v2
 ### **8. Run the Container with Auto-Start**
 To run the container with the auto-start script:
 ```bash
-docker run --name=DemoAD -ti --rm --runtime=nvidia --gpus all one/ad-base:v2 bash -c 'source DemoAD_start.sh'
+docker run --name=DemoReID -ti --rm --runtime=nvidia --gpus all one/reid-base:v2 bash -c 'source DemoReID_start.sh'
 ```
 
 ---
@@ -149,12 +149,12 @@ docker run --name=DemoAD -ti --rm --runtime=nvidia --gpus all one/ad-base:v2 bas
 ### **9. Export the Docker Image**
 To export the Docker image as a `.tar.gz` file:
 ```bash
-docker save one/ad-base:v2 | gzip > one_ad-base_v2.tar.gz
+docker save one/reid-base:v2 | gzip > one_reid-base_v2.tar.gz
 ```
 or
 ```bash
-docker image save one/ad-base:v2 -o one_ad-base_v2.tar.gz
-```
+docker image save one/reid-base:v2 -o one_reid-base_v2.tar.gz
+```dokcer 
 
 #### Move the Image to Google Drive:
 Upload the image to the ONE project folder on Google Drive:
@@ -167,7 +167,7 @@ Upload the image to the ONE project folder on Google Drive:
 ### **10. Import the Docker Image**
 To load the Docker image on a new system:
 ```bash
-docker load < /path/to/one_ad-base_v2.tar.gz
+docker load < /path/to/one_reid-base_v2.tar.gz
 ```
 
 ---
