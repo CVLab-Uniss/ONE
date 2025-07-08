@@ -87,7 +87,7 @@ print("DEVICE used: ", device)
 
 datasetPath =  'Demo_cameras/'
 print("Query image (vehicle id: ", img_id, ")")
-#display(testimg_or)
+display(testimg_or.resize((250,250)))
 
 for cam in camera_vect:
     #print("Camera id:", cam)
@@ -137,7 +137,7 @@ for cam in camera_vect:
         df_filt = df.loc[df['img'].str.contains(images[bestIdx].split('/')[-1])]
         img_id = df_filt['img'].values[0].split('/')[0]
         print("Query vehicle found in camera num. ", cam, " (vehicle id:", img_id,")")
-        #display(image)
+        display(image.resize((250,250)))
     else:
         bestIdx = indexes[0][0]
         image = Image.open(images[bestIdx])
