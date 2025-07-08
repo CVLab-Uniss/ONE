@@ -6,22 +6,8 @@ Single istances means a basic pipeline (input/output) of each of the two tasks.
 
 ---
 
-## Task: **Re-Identification (ReID)**
-The **Demo_ReID** folder contains data for the ReID task, including the following files:
-
-- **Demo_ReID.py**: Python script that runs the ReID demo.
-- **city_map.pdf**: A slide with the map of the selected routes for the demo.
-- **runDemo.ipynb**: Jupyter notebook for running the demo.
-- **test_3000_id.txt**: Support file with image data used in the demo.
-- **Demo_cameras/**: Folder containing the images for the demo, organized by camera.
-
-### Required Model:
-To run the Python code, download the fine-tuned model from the following location:
-[Download Model](https://drive.google.com/file/d/1qpcHKMnlRv7NbKCro2ls5v2p0HqHitTm/view?usp=drive_link)
-
----
-
 ## Task: **Anomaly Detection (AD)**
+
 This Python script performs automatic object detection on a video randomly selected from a folder.
 It uses the YOLO (You Only Look Once) model to identify vehicles and other objects of interest in a road environment.
 ### Functionality:
@@ -33,3 +19,23 @@ It uses the YOLO (You Only Look Once) model to identify vehicles and other objec
    * Computing the median frame (representing the static background);
    * Performing object detection on the median frame using YOLO.
 3. The detected objects are displayed on the screen along with their corresponding classes (e.g., "car", "truck").
+
+---
+
+## Task: **Re-Identification (ReID)**
+
+This script implements a vehicle Re-Identification (ReID) system based on computer vision, integrating deep learning models and approximate vector search techniques.
+The architecture combines YOLO for object detection (vehicle bounding boxes) and DinoV2 as a feature extractor via a Vision Transformer.
+The system is structured into the following main stages:
+
+1. **Data loading**: Image metadata are read from a `.txt` file containing vehicle IDs and camera IDs.
+2. **Model definition**: A custom neural network is built by extending DinoV2 with a multi-layer classifier, aimed at feature extraction and classification.
+3. **Pre-processing**: An image transformation pipeline is defined (resizing, normalization).
+4. **Vehicle detection with YOLO**: Object detection is performed on an input image (focused on COCO classes related to vehicles), and vehicle-containing crops are saved.
+5. **Query feature extraction**: Features are computed from a query image using the loaded model and normalized for subsequent retrieval.
+6. **Gallery construction**: A set of images is processed (excluding the query’s camera), features are extracted, and indexed using FAISS.
+7. **Search and comparison**: A k-NN search (k=5) is performed to find the most similar candidates.
+   A vehicle is considered correctly identified if the distance to the top result is sufficiently low and the distance variance is significant.
+8. **Results visualization**: If the vehicle is identified, the corresponding image is displayed along with the camera ID and vehicle ID.
+
+The system is designed to perform ReID on realistic datasets and can be adapted for execution on either CPU or GPU.
