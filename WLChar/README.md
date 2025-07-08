@@ -4,6 +4,7 @@
 This repository provides the code and data necessary to run basic implementations of two computer vision tasks: Re-Identification (ReID) and Anomaly Detection (AD).
 By "basic implementations" we refer to simplified, standalone pipelines for each task, where a standard input the input is processed through the entire processing pipeline to produce the output. 
 These implementations are intended to demonstrate the essential functioning of ReID and AD, in order to test the consumption of the basic pipeline.
+The purpose of these code is to 
 
 ---
 
@@ -27,7 +28,7 @@ It uses the YOLO (You Only Look Once) model to identify vehicles and other objec
 
 This script implements a vehicle Re-Identification (ReID) system based on computer vision, integrating deep learning models and approximate vector search techniques.
 The architecture combines YOLO for object detection (vehicle bounding boxes) and DinoV2 as a feature extractor via a Vision Transformer.
-The system is structured into the following main stages:
+### Functionality:
 
 1. **Data loading**: Image metadata are read from a `.txt` file containing vehicle IDs and camera IDs.
 2. **Model definition**: A custom neural network is built by extending DinoV2 with a multi-layer classifier, aimed at feature extraction and classification.
