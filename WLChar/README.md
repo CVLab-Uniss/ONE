@@ -4,6 +4,7 @@
 This repository provides the code and data necessary to run basic implementations of two computer vision tasks: Re-Identification (ReID) and Anomaly Detection (AD).
 By "basic implementations" we refer to simplified, standalone pipelines for each task, where a standard input the input is processed through the entire processing pipeline to produce the output. 
 These implementations are intended to demonstrate the essential functioning of ReID and AD, in order to test the consumption of the basic pipeline.
+
 ---
 
 ## Task: **Anomaly Detection (AD)**
