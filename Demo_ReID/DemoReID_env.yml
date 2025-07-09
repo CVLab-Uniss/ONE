@@ -1,4 +1,4 @@
-name: ONE_finetuning
+name: DemoReID
 channels:
   - nvidia
   - conda-forge

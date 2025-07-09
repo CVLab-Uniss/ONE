@@ -34,6 +34,8 @@ from ultralytics import YOLO
 import cv2
 
 filename = '../../Demo_ReID/test_3000_id.txt'
+###### ATTENZIONE ######
+## IL NUOVO MODELLO DI DINO NON È COMPATIBILE CON IL CODICE. È STATO SOSTITUITO IL FILE ATTENTION.PY: IN PARTICOLARE LA FUNZIONE FORWARD(). LA FUNZIONE PIÙ RECENTE (NON FUNZIONANTE PER NOI) È PRESENTE IN ATTENTION_OLD.PY (~/.cache/torch/hub/facebookresearch_dinov2_main/dinov2/layers/)
 dinov2_vits14 = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
 #device = "cpu"
 #device = "cuda"
