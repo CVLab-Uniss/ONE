@@ -35,9 +35,9 @@ import cv2
 
 filename = '../../Demo_ReID/test_3000_id.txt'
 dinov2_vits14 = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
-device = "cpu"
+#device = "cpu"
 #device = "cuda"
-#device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 print("DEVICE used: ", device)
 
 df = pd.read_csv(filename, sep=" ", header=None, names=["img", "v_id", "c_id"])
