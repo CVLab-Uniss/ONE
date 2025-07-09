@@ -12,6 +12,22 @@
 # 8. Visualizzazione dei risultati: se il veicolo viene individuato, l'immagine corrispondente viene visualizzata insieme all'indicazione della telecamera e dell'ID veicolo.
 # Il sistema è progettato per eseguire ReID su dataset realistici e può essere adattato per l'esecuzione su CPU o GPU. 
 
+###### ATTENZIONE ######
+## IL NUOVO MODELLO DI DINO NON È COMPATIBILE CON IL CODICE. L'ERRORE E' IL SEGUENTE "TypeError: scaled_dot_product_attention(): argument 'dropout_p' must be float, not Dropout"
+## COME WORKAROUND È STATO SOSTITUITO IL FILE ATTENTION.PY: IN PARTICOLARE LA FUNZIONE FORWARD() di seguito
+# def forward(self, x: Tensor) -> Tensor:
+#         B, N, C = x.shape
+#         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+#         q, k, v = qkv[0] * self.scale, qkv[1], qkv[2]
+#         attn = q @ k.transpose(-2, -1)
+#         attn = attn.softmax(dim=-1)
+#         attn = self.attn_drop(attn)
+#         x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+#         x = self.proj(x)
+#         x = self.proj_drop(x)
+#         return x
+# LA FUNZIONE PIÙ RECENTE (NON FUNZIONANTE PER NOI) È PRESENTE IN ATTENTION_OLD.PY (~/.cache/torch/hub/facebookresearch_dinov2_main/dinov2/layers/)
+
 import pandas as pd
 import shutil
 
@@ -34,8 +50,6 @@ from ultralytics import YOLO
 import cv2
 
 filename = '../../Demo_ReID/test_3000_id.txt'
-###### ATTENZIONE ######
-## IL NUOVO MODELLO DI DINO NON È COMPATIBILE CON IL CODICE. È STATO SOSTITUITO IL FILE ATTENTION.PY: IN PARTICOLARE LA FUNZIONE FORWARD(). LA FUNZIONE PIÙ RECENTE (NON FUNZIONANTE PER NOI) È PRESENTE IN ATTENTION_OLD.PY (~/.cache/torch/hub/facebookresearch_dinov2_main/dinov2/layers/)
 dinov2_vits14 = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
 #device = "cpu"
 #device = "cuda"
