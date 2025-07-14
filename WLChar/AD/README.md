@@ -15,6 +15,7 @@ git pull
 
 #### Change the script `DemoAD_start.sh`:
 ```bash
+cd ..
 nano DemoAD_start.sh
 ```
 
