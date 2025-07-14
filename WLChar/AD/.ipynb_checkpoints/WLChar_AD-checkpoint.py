@@ -17,7 +17,7 @@ import math
 import random
 import torch
 import time
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 #https://github.com/ultralytics/ultralytics
 #https://docs.ultralytics.com/modes/predict/#inference-arguments
@@ -96,7 +96,7 @@ total_duration = 12  # secondi
 sleep_per_step = total_duration / steps
 
 # Barra di progresso per notebook
-for _ in tqdm(range(steps), desc="Acquiring 360 frames from camera (12 seconds)", ncols=700):
+for _ in tqdm(range(steps), desc="Acquiring 360 frames from camera (12 seconds)"):
     time.sleep(sleep_per_step)
 
 # Apre il video selezionato
