@@ -87,7 +87,7 @@ docker image tag one/wlchar_reid:cpu pietroruiu/one-project:wlchar_reid_cpu
 Push all the tags of the images for the repository 
 ```bash
 sudo docker image push --all-tags pietroruiu/one-project
-
+```
 #### **Test the image**
 ```bash
 docker run --name=WLChar_ReID -ti --rm --runtime=nvidia --gpus all pietroruiu/one-project:wlchar_reid_cpu bash -c 'source DemoReID_start.sh'
