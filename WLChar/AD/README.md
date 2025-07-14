@@ -52,7 +52,7 @@ docker commit test-gpu one/wlchar_ad:gpu
 ### **3. Run the Container with Auto-Start**
 To run the container with the auto-start script, selcting the image with tag "cpu" for the edge and the image with tag "gpu" for the cloud:
 ```bash
-docker run --name=DemoAD -ti --rm --runtime=nvidia --gpus all one/wlchar_ad:cpu -c 'source DemoAD_start.sh'
+docker run --name=WLChar_AD -ti --rm --runtime=nvidia --gpus all one/wlchar_ad:cpu -c 'source DemoAD_start.sh'
 ```
 
 ---
