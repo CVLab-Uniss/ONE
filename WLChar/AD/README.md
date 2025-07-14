@@ -45,13 +45,14 @@ device_local = "cuda" #for the cloud
 ```
 
 #### Save the Changes:
+On the host machine run:
 For the edge:
 ```bash
-docker commit test-gpu one/wlchar_ad:cpu
+docker commit DemoAD one/wlchar_ad:cpu
 ```
 For the cloud:
 ```bash
-docker commit test-gpu one/wlchar_ad:gpu
+docker commit DemoAD one/wlchar_ad:gpu
 ```
 ---
 
