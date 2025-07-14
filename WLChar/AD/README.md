@@ -32,10 +32,10 @@ nano WLChar_AD.py
 ```
 Select the device for the specifi HW
 ```bash
-device_local = "cpu" for the Edge
+device_local = "cpu" #for the Edge
 ```
 ```bash
-device_local = "cuda" for the cloud
+device_local = "cuda" #for the cloud
 ```
 
 #### Save the Changes:
