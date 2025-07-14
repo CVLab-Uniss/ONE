@@ -1,11 +1,11 @@
-### **8. Run the DemoAD Container in interactive mode**
+### **1. Run the DemoAD Container in interactive mode**
 To run the container with the auto-start script:
 ```bash
 docker run --name=DemoAD -ti --runtime=nvidia --gpus all one/ad-base:v2 bash -c
 ```
 ---
 
-### **7. Change the Auto-Start Script for the WLChar**
+### **2. Change the Auto-Start Script for the WLChar**
 
 #### Change the script `DemoAD_start.sh`:
 ```bash
@@ -43,4 +43,12 @@ For the cloud:
 ```bash
 docker commit test-gpu one/wlchar_ad:gpu
 ```
+---
+
+### **3. Run the Container with Auto-Start**
+To run the container with the auto-start script, selcting the image with tag "cpu" for the edge and the image with tag "gpu" for the cloud:
+```bash
+docker run --name=DemoAD -ti --rm --runtime=nvidia --gpus all one/wlchar_ad:cpu -c 'source DemoAD_start.sh'
+```
+
 ---
