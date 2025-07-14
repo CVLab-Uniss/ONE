@@ -93,3 +93,4 @@ sudo docker image push --all-tags pietroruiu/one-project
 docker run --name=WLChar_ReID -ti --rm --runtime=nvidia --gpus all pietroruiu/one-project:wlchar_reid_cpu bash -c 'source DemoReID_start.sh'
 ```
 
+
