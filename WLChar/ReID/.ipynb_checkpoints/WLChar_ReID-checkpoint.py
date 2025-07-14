@@ -52,8 +52,8 @@ import cv2
 filename = '../../Demo_ReID/test_3000_id.txt'
 dinov2_vits14 = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
 #device = "cpu"
-#device = "cuda"
-device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+device = "cuda"
+#device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 print("DEVICE used: ", device)
 
 df = pd.read_csv(filename, sep=" ", header=None, names=["img", "v_id", "c_id"])
@@ -134,7 +134,8 @@ else:
 
 #model_name = 'test_mini_EE1.pth'
 model_name = '../../Demo_ReID/test_full.pth'
-model = torch.load(model_name).to(device)
+#model = torch.load(model_name).to(device)
+model = torch.load(model_name, map_location=torch.device(device))
 
 # ********************* QUERY *******************
 
