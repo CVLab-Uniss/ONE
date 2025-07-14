@@ -90,6 +90,6 @@ sudo docker image push --all-tags pietroruiu/one-project
 
 ### **Test the image**
 ```bash
-docker run --name=WLChar_ReID -ti --rm --runtime=nvidia --gpus all pietroruiu/one-project:wlchar_ad_cpu bash -c 'source DemoAD_start.sh'
+docker run --name=WLChar_ReID -ti --rm --runtime=nvidia --gpus all pietroruiu/one-project:wlchar_reid_cpu bash -c 'source DemoReID_start.sh'
 ```
 
