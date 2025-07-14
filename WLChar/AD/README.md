@@ -28,9 +28,8 @@ python WLChar_AD.py
 ```
 
 #### Test the Script:
-Deactivate the virtual environment, then run the script:
+Run the script:
 ```bash
-deactivate
 source DemoAD_start.sh
 ```
 #### Check the device in WLChar_AD.py:
