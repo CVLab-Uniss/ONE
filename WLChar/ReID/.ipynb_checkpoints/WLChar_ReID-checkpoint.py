@@ -43,7 +43,7 @@ from torch import nn, optim
 from torchvision import datasets, transforms
 from copy import deepcopy
 import matplotlib.pyplot as plt
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 import statistics as st
 
 from ultralytics import YOLO
@@ -167,7 +167,7 @@ camera_vect = [2]
 
 datasetPath =  '../../Demo_ReID/Demo_cameras/'
 print("Query image (vehicle id: ", img_id, ")")
-display(testimg_or.resize((250,250)))
+#display(testimg_or.resize((250,250)))
 
 for cam in camera_vect:
     #print("Camera id:", cam)
@@ -217,7 +217,7 @@ for cam in camera_vect:
         df_filt = df.loc[df['img'].str.contains(images[bestIdx].split('/')[-1])]
         img_id = df_filt['img'].values[0].split('/')[0]
         print("Query vehicle found in camera num. ", cam, " (vehicle id:", img_id,")")
-        display(image.resize((250,250)))
+        #display(image.resize((250,250)))
     else:
         bestIdx = indexes[0][0]
         image = Image.open(images[bestIdx])
