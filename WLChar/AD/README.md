@@ -1,5 +1,3 @@
----
-
 ### **8. Run the DemoAD Container in interactive mode**
 To run the container with the auto-start script:
 ```bash
@@ -7,8 +5,7 @@ docker run --name=DemoAD -ti --runtime=nvidia --gpus all one/ad-base:v2 bash -c
 ```
 ---
 
-
-### **7. Chenage the Auto-Start Script for the WLChar**
+### **7. Change the Auto-Start Script for the WLChar**
 
 #### Change the script `DemoAD_start.sh`:
 ```bash
