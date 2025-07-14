@@ -54,5 +54,4 @@ To run the container with the auto-start script, selcting the image with tag "cp
 ```bash
 docker run --name=WLChar_AD -ti --rm --runtime=nvidia --gpus all one/wlchar_ad:cpu -c 'source DemoAD_start.sh'
 ```
-
 ---
