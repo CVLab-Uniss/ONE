@@ -16,6 +16,8 @@ import os
 import math
 import random
 import torch
+import time
+from tqdm.notebook import tqdm
 
 #https://github.com/ultralytics/ultralytics
 #https://docs.ultralytics.com/modes/predict/#inference-arguments
@@ -86,6 +88,16 @@ def preProcImg(image):
     l = math.ceil(rw / 2)
     r = math.floor(rw / 2)
     return add_margin(image, t, r, b, l, 0)
+
+
+# Parametri
+steps = 360
+total_duration = 12  # secondi
+sleep_per_step = total_duration / steps
+
+# Barra di progresso per notebook
+for _ in tqdm(range(steps), desc="Acquiring 360 frames from camera (12 seconds)", ncols=700):
+    time.sleep(sleep_per_step)
 
 # Apre il video selezionato
 cap = cv2.VideoCapture(video_path)
