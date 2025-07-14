@@ -4,11 +4,23 @@ To run the container with the auto-start script:
 docker run --name=DemoReID -ti --runtime=nvidia --gpus all one/reid-base:v2 bash
 ```
 #### **Update ONE directory from gitHub**
-Run git pull to download thw WLChar code:
+Run git pull to download the WLChar code:
 ```bash
 cd /ONE/
 git pull
 ```
+#### **Install YOLO**
+Activate the env and install with pip:
+```bash
+source "one-env/bin/activate"
+pip install ultralytics
+```
+Install these libraries:
+```bash
+apt-get update && apt-get install -y libgl1
+apt-get update && apt-get install -y libglib2.0-0
+```
+
 ---
 
 ### **2. Change the Auto-Start Script for the WLChar**
@@ -34,7 +46,7 @@ source DemoReID_start.sh
 ```
 #### Check the device in WLChar_AD.py:
 ```bash
-nano WLChar_AD.py
+nano /ONE/WLChar/ReID/WLChar_ReID.py
 ```
 Select the device for the specific HW:
 ```bash
@@ -45,19 +57,20 @@ device_local = "cuda" #for the cloud
 ```
 
 #### Save the Changes:
+On the host machine run:
 For the edge:
 ```bash
-docker commit test-gpu one/wlchar_ad:cpu
+docker commit DemoReID one/wlchar_reid:cpu
 ```
 For the cloud:
 ```bash
-docker commit test-gpu one/wlchar_ad:gpu
+docker commit DemoReID one/wlchar_reid:gpu
 ```
 ---
 
 ### **3. Run the Container with Auto-Start**
 To run the container with the auto-start script, selcting the image with tag "cpu" for the edge and the image with tag "gpu" for the cloud:
 ```bash
-docker run --name=WLChar_AD -ti --rm --runtime=nvidia --gpus all one/wlchar_ad:cpu bash -c 'source DemoAD_start.sh'
+docker run --name=WLChar_ReID -ti --rm --runtime=nvidia --gpus all one/wlchar_reid:cpu bash -c 'source DemoReID_start.sh'
 ```
 ---
