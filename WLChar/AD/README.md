@@ -3,6 +3,12 @@ To run the container with the auto-start script:
 ```bash
 docker run --name=DemoAD -ti --runtime=nvidia --gpus all one/ad-base:v2 bash -c
 ```
+#### **Update ONE directory from gitHub**
+Run git pull to download thw WLChar code:
+```bash
+cd /ONE/
+git pull
+```
 ---
 
 ### **2. Change the Auto-Start Script for the WLChar**
