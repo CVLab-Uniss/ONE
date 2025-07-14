@@ -31,8 +31,12 @@ source DemoAD_start.sh
 nano WLChar_AD.py
 ```
 Select the device for the specifi HW
-- device_local = "cpu" for the Edge
+```bash
+device_local = "cpu" for the Edge
+```
+```bash
 - device_local = "cuda" for the cloud
+```
 
 #### Save the Changes:
 For the edge:
