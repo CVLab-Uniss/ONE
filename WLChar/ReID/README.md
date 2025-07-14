@@ -74,3 +74,23 @@ To run the container with the auto-start script, selcting the image with tag "cp
 docker run --name=WLChar_ReID -ti --rm --runtime=nvidia --gpus all one/wlchar_reid:cpu bash -c 'source DemoReID_start.sh'
 ```
 ---
+### **4. Push iamges on Docker Hub**
+Login in Docker Hub:
+```bash
+sudo docker login
+```
+Create tags for the images to be pushed:
+```bash
+docker image tag one/wlchar_reid:gpu pietroruiu/one-project:wlchar_reid_gpu
+docker image tag one/wlchar_reid:cpu pietroruiu/one-project:wlchar_reid_cpu
+```
+Push all the tags of the images for the repository 
+```bash
+sudo docker image push --all-tags pietroruiu/one-project
+```
+---
+### **Test the image**
+```bash
+docker run --name=WLChar_ReID -ti --rm --runtime=nvidia --gpus all pietroruiu/one-project:wlchar_ad_cpu bash -c 'source DemoAD_start.sh'
+```
+
