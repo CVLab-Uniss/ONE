@@ -30,7 +30,7 @@ source DemoAD_start.sh
 ```bash
 nano WLChar_AD.py
 ```
-Select the device for the specifi HW
+Select the device for the specific HW:
 ```bash
 device_local = "cpu" #for the Edge
 ```
