@@ -117,7 +117,7 @@ if max_offset <= 0:
 # genera offset casuale
 offset = random.randint(0, max_offset)
 frame_idx = offset
-print(offset)
+#print(offset)
 
 while frame_idx + frameSlot <= frameSlot + offset:
     cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
