@@ -51,14 +51,12 @@ import cv2
 
 filename = '../../Demo_ReID/test_3000_id.txt'
 dinov2_vits14 = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
-#device = "cpu"
-device = "cuda"
+device = "cpu"
+#device = "cuda"
 #device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 print("DEVICE used: ", device)
 
 df = pd.read_csv(filename, sep=" ", header=None, names=["img", "v_id", "c_id"])
-#camera_vect = [2, 30, 39, 102, 3, 172, 23, 137, 14, 79, 34, 78, 41, 51, 111, 110, 94, 139, 163, 122, 81]
-camera_vect = [2]
 
 class_names = 30671
 param = round(class_names/4)
@@ -163,8 +161,8 @@ faiss.normalize_L2(vector)
 
 # CALCULATE FEATURES FOR GALLERY IMAGES
 # new vector without the query image (camera num 14)
-#camera_vect = [2, 30, 39, 102, 3, 172, 23, 137, 14, 79, 34, 78, 41, 51, 111, 110, 94, 139, 163, 122, 81]
-camera_vect = [2] 
+camera_vect = [2, 30, 39, 102, 3, 172, 23, 137, 14, 79, 34, 78, 41, 51, 111, 110, 94, 139, 163, 122, 81]
+#camera_vect = [2] 
 
 datasetPath =  '../../Demo_ReID/Demo_cameras/'
 print("Query image (vehicle id: ", img_id, ")")

@@ -91,35 +91,27 @@ def preProcImg(image):
 
 
 # Parametri
+steps = 360
 total_duration = 12  # secondi
-sleep_per_step = total_duration / frameSlot
+sleep_per_step = total_duration / steps
 
 # Barra di progresso per notebook
-for _ in tqdm(range(frameSlot), desc="Acquiring 360 frames from camera (12 seconds)"):
+for _ in tqdm(range(steps), desc="Acquiring 360 frames from camera (12 seconds)"):
     time.sleep(sleep_per_step)
 
 # Apre il video selezionato
 cap = cv2.VideoCapture(video_path)
-start_time = time.time()
 if not cap.isOpened():
     raise IOError(f"Errore nell'apertura del video: {video_name}")
 
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) 
+# frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 # print(f"Totale frame nel video: {frame_count}")
 
-#adding an offset for variability
-max_offset = frame_count - 3690
-if max_offset <= 0:
-    raise ValueError("Il video è troppo corto per sottrarre 3690 frame.")
+frame_idx = 0
 
-# genera offset casuale
-offset = random.randint(0, max_offset)
-frame_idx = offset
-print(offset)
-
-while frame_idx + frameSlot <= frameSlot + offset:
+while frame_idx + frameSlot <= frameSlot:
     cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
 
     frames = np.empty((frameSlot, frame_height, frame_width), dtype=np.uint8)
@@ -163,16 +155,3 @@ while frame_idx + frameSlot <= frameSlot + offset:
     frame_idx += timeSlot  # Avanza di 3600 frame (2 minuti)
 
 cap.release()
-end_time = time.time()
-elapsed = end_time - start_time
-
-# Parametri
-total_duration = 120 - elapsed  # secondi
-if total_duration < 0 :
-    sleep_per_step = 0
-else :
-    sleep_per_step = total_duration / timeSlot
-
-# Barra di progresso per notebook
-for _ in tqdm(range(timeSlot), desc=f"Acquiring 3600 frames from camera ({120 - elapsed} seconds)"):
-    time.sleep(sleep_per_step)

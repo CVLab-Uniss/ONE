@@ -1,0 +1,24 @@
+# Dockerfile
+# 1) Start from the same runtime you used with `docker run`
+FROM pietroruiu/one-project:wlchar_reid_api_cpu
+
+# 2) Use bash as the default shell so `source` works as expected
+SHELL ["/bin/bash", "-lc"]
+
+# 3) (Optional) Set a working directory for your app
+#WORKDIR /app
+
+# 4) Copy your startup script (skip this if the image already contains it
+#    at the expected path; otherwise keep it here)
+#COPY DemoReID_start.sh ./DemoReID_start.sh
+#RUN chmod +x ./DemoReID_start.sh
+
+# 5) Helpful defaults
+ENV PYTHONUNBUFFERED=1
+
+# 6) (Optional) Expose the port your API listens on — adjust if different
+EXPOSE 5000
+
+# 7) Start exactly like your `docker run ... bash -c 'source DemoReID_start.sh'`
+#    Using CMD keeps it overridable (`docker run ... <another command>`).
+CMD ["bash", "-lc", "source ./DemoReID_start.sh"]
