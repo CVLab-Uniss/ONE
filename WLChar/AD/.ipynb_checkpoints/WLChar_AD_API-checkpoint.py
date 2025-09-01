@@ -63,9 +63,14 @@ timeSlot = 3600   # distanza tra due analisi successive
 device_local = "cpu"
 #device_local = "cuda"
 #device_local = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+model_name = 'yolo11m.pt'
 #model = YOLO('yolov8m.pt')
-model = YOLO('yolo11m.pt')
+model = YOLO(model_name)
 print(f"Local device in use: {device_local}")
+print(f"Object detection model in use: {model_name}")
+print("\n")
+
+print("********** START RE-IDENTIFICATION TASK **********")
 
 # In caso di anomalia invia un messaggio all'end-point dello slave node
 def report_anomaly(object_type):

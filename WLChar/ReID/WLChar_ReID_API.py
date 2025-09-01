@@ -58,11 +58,21 @@ import urllib3
 
 
 filename = '../../Demo_ReID/test_3000_id.txt'
-dinov2_vits14 = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
 #device = "cpu"
 device = "cuda"
 #device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
-print("DEVICE used: ", device)
+
+#obj_det_model = "yolov8m.pt"            
+obj_det_model = "yolo11m.pt" 
+feat_extr_model = "dinov2_vits14"
+
+print(f"Local device in use: {device}")
+print(f"Object detection model in use: {obj_det_model}")
+print(f"Features extraction model in use: {feat_extr_model}")
+print("\n")
+
+print("********** START RE-IDENTIFICATION TASK **********")
+print("Query vehicle image received!")
 
 df = pd.read_csv(filename, sep=" ", header=None, names=["img", "v_id", "c_id"])
 class_names = 30671
@@ -73,8 +83,6 @@ vehicle_classes = [2, 3, 5, 7]  # car, motorcycle, bus, truck
 # === PARAMETRI YOLO ===
 input_image_path = "low_traffic.jpeg"         # Percorso immagine di input
 output_folder = "cropped_objects"      # Cartella dove salvare i ritagli
-#model_path = "yolov8m.pt"              # Modello YOLOv8
-model_path = "yolo11m.pt" 
 # === CREA CARTELLA DI OUTPUT SE NECESSARIO ===
 os.makedirs(output_folder, exist_ok=True)
 
@@ -83,8 +91,9 @@ os.makedirs(output_folder, exist_ok=True)
 camera_vect = [2, 30, 39, 102, 3, 172, 23, 137, 14, 79, 34, 78, 41, 51, 111, 110, 94, 139, 163, 122, 81]
 #camera_vect = [14] 
 
-# === CARICA MODELLO YOLO ===
-model_yolo = YOLO(model_path)
+# === CARICA I MODELLI ===
+model_yolo = YOLO(obj_det_model)
+dinov2_vits14 = torch.hub.load("facebookresearch/dinov2", feat_extr_model)
 
 class DinoVisionTransformerClassifier(nn.Module):
     def __init__(self):
@@ -179,9 +188,10 @@ def run_reid():
             cropped_pil = Image.fromarray(cropped)
             save_path = os.path.join(output_folder, f"object_{i+1}.jpg")
             cropped_pil.save(save_path)
-            print(f"Salvato: {save_path}")
+            #print(f"Salvato: {save_path}")
+            print("Vehicle extracted from selected frame.")
     else:
-        print("Nessun veicolo rilevato.")
+        print("No vehicle detected.")
     
     # ********************* LOAD MODEL AND CALCULATE QUERY FEATURES *******************
     #model_name = 'test_mini_EE1.pth'
@@ -220,7 +230,8 @@ def run_reid():
         # ********************* GALLERY *******************
         
         datasetPath =  '../../Demo_ReID/Demo_cameras/'
-        print("Query image (vehicle id: ", img_id, ")")
+        #print("Query image (vehicle id: ", img_id, ")")
+        print("Features extracted for query vehicle image.")
         #display(testimg_or.resize((250,250)))
     
         for cam in camera_vect:
@@ -245,6 +256,7 @@ def run_reid():
                 add_vector_to_index(outputs, index)
             
             distances, indexes = index.search(vector, 5)
+            print("Features extracted for detected vehicles in frame.")
             #print('distances:', distances, 'indexes:', indexes)
             
             dist_vec = []
@@ -260,13 +272,15 @@ def run_reid():
                 image = Image.open(images[bestIdx])
                 df_filt = df.loc[df['img'].str.contains(images[bestIdx].split('/')[-1])]
                 img_id = df_filt['img'].values[0].split('/')[0]
-                print("Query vehicle found in camera num. ", cam, " (vehicle id:", img_id,")")
+                #print("Query vehicle found in camera num. ", cam, " (vehicle id:", img_id,")")
+                print("Query vehicle found!) 
                 #display(image.resize((250,250)))
                 report_reid(task_id)
             else:
                 bestIdx = indexes[0][0]
                 image = Image.open(images[bestIdx])
-                print("Query vehicle NOT found in camera num. ", cam)
+                #print("Query vehicle NOT found in camera num. ", cam)
+                print("Query vehicle NOT found!") 
                 # display(image) #uncomment for debug
 
 #**************************************************************************************************** 
