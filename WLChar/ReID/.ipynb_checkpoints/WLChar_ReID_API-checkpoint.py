@@ -58,8 +58,8 @@ import urllib3
 
 
 filename = '../../Demo_ReID/test_3000_id.txt'
-#device = "cpu"
-device = "cuda"
+device = "cpu"
+#device = "cuda"
 #device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 
 #obj_det_model = "yolov8m.pt"            
@@ -72,7 +72,6 @@ print(f"Features extraction model in use: {feat_extr_model}")
 print("\n")
 
 print("********** START RE-IDENTIFICATION TASK **********")
-print("Query vehicle image received!")
 
 df = pd.read_csv(filename, sep=" ", header=None, names=["img", "v_id", "c_id"])
 class_names = 30671
@@ -155,15 +154,17 @@ app = Flask(__name__)
 
 # *************************************************************************************************
 # route http posts to this method
-@app.route('/run_reid', methods=['POST'])
+#@app.route('/run_reid', methods=['POST'])
 
 def run_reid():
 
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'No JSON received'}), 400
+    # data = request.get_json()
+    # if not data:
+    #     return jsonify({'error': 'No JSON received'}), 400
 
-    task_id = data['task_id']
+    # task_id = data['task_id']
+    task_id = "PROVA_ID_TEST_0987654321"
+    print("Query vehicle image received!")
     
     # === CARICA IMMAGINE ===
     img_bgr = cv2.imread(input_image_path)
@@ -178,21 +179,7 @@ def run_reid():
                             classes=vehicle_classes,
                             device=device,   # Cambia in "cuda" se hai una GPU
                             verbose=False)
-    
-    # === ESTRAI BBOX E SALVA RITAGLI ===
-    boxes = results[0].boxes
-    if boxes is not None and boxes.xyxy is not None:
-        for i, box in enumerate(boxes.xyxy):
-            x1, y1, x2, y2 = map(int, box[:4])
-            cropped = img_rgb[y1:y2, x1:x2]
-            cropped_pil = Image.fromarray(cropped)
-            save_path = os.path.join(output_folder, f"object_{i+1}.jpg")
-            cropped_pil.save(save_path)
-            #print(f"Salvato: {save_path}")
-            print("Vehicle extracted from selected frame.")
-    else:
-        print("No vehicle detected.")
-    
+      
     # ********************* LOAD MODEL AND CALCULATE QUERY FEATURES *******************
     #model_name = 'test_mini_EE1.pth'
     model_name = '../../Demo_ReID/test_full.pth'
@@ -210,7 +197,7 @@ def run_reid():
         faiss.normalize_L2(vector)
         index.add(vector)
     
-    while True:
+    while True:        
         df_filt = df.loc[df['img'].str.contains(testImage.split('/')[-1])]
         img_id = df_filt['img'].values[0].split('/')[0]
         
@@ -235,6 +222,21 @@ def run_reid():
         #display(testimg_or.resize((250,250)))
     
         for cam in camera_vect:
+            print("Analyzing video streaming from camera.")
+            # === ESTRAI BBOX E SALVA RITAGLI ===
+            boxes = results[0].boxes
+            if boxes is not None and boxes.xyxy is not None:
+                for i, box in enumerate(boxes.xyxy):
+                    x1, y1, x2, y2 = map(int, box[:4])
+                    cropped = img_rgb[y1:y2, x1:x2]
+                    cropped_pil = Image.fromarray(cropped)
+                    save_path = os.path.join(output_folder, f"object_{i+1}.jpg")
+                    cropped_pil.save(save_path)
+                    #print(f"Salvato: {save_path}")
+                print("Vehicle images detected on streaming.")
+            else:
+                print("No vehicle detected.")
+                break
             #print("Camera id:", cam)
             #Populate the images variable with all the images in the dataset folder
             images = []
@@ -258,6 +260,8 @@ def run_reid():
             distances, indexes = index.search(vector, 5)
             print("Features extracted for detected vehicles in frame.")
             #print('distances:', distances, 'indexes:', indexes)
+
+            print("Features comparison for re-identification task.")
             
             dist_vec = []
             id = 0
@@ -273,21 +277,23 @@ def run_reid():
                 df_filt = df.loc[df['img'].str.contains(images[bestIdx].split('/')[-1])]
                 img_id = df_filt['img'].values[0].split('/')[0]
                 #print("Query vehicle found in camera num. ", cam, " (vehicle id:", img_id,")")
-                print("Query vehicle found!) 
+                print("Query vehicle identified!") 
                 #display(image.resize((250,250)))
                 report_reid(task_id)
             else:
                 bestIdx = indexes[0][0]
                 image = Image.open(images[bestIdx])
                 #print("Query vehicle NOT found in camera num. ", cam)
-                print("Query vehicle NOT found!") 
-                # display(image) #uncomment for debug
+                print("Query vehicle NOT identified!") 
+            print("\n")
 
 #**************************************************************************************************** 
 #start flask app
 print("Server ready!\n")
 
-serve(app, host="0.0.0.0", port=5000)
+#serve(app, host="0.0.0.0", port=5000)
+run_reid()
+
 
 
 
