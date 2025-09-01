@@ -65,7 +65,7 @@ device_local = "cpu"
 #device_local = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 #model = YOLO('yolov8m.pt')
 model = YOLO('yolo11m.pt')
-print(f"Dispositivo in uso: {device_local}")
+print(f"Local device in use: {device_local}")
 
 # In caso di anomalia invia un messaggio all'end-point dello slave node
 def report_anomaly(object_type):
@@ -127,33 +127,40 @@ def preProcImg(image):
 
 
 # Parametri
-steps = 360
 total_duration = 12  # secondi
-sleep_per_step = total_duration / steps
-
-
+sleep_per_step = total_duration / frameSlot
 
 while True:
     video_name = random.choice(video_list)
     video_path = os.path.join(video_dir, video_name)
-    print(f"Video selezionato: {video_name}")
+    #print(f"Video selezionato: {video_name}")
+    print("Starting acquisition for background estimation")
 
     # Barra di progresso per notebook
-    for _ in tqdm(range(steps), desc="Acquiring 360 frames from camera (12 seconds)"):
+    for _ in tqdm(range(frameSlot), desc="Acquiring 360 frames from camera (12 seconds)"):
         time.sleep(sleep_per_step)
     # Apre il video selezionato
     cap = cv2.VideoCapture(video_path)
+    start_time = time.time()
     if not cap.isOpened():
         raise IOError(f"Errore nell'apertura del video: {video_name}")
     
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    # frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     # print(f"Totale frame nel video: {frame_count}")
+
+    #adding an offset for variability
+    max_offset = frame_count - 3690
+    if max_offset <= 0:
+        raise ValueError("Il video è troppo corto per sottrarre 3690 frame.")
     
-    frame_idx = 0
+    # genera offset casuale
+    offset = random.randint(0, max_offset)
+    frame_idx = offset
+    #print(offset)
     
-    while frame_idx + frameSlot <= frameSlot:
+    while frame_idx + frameSlot <= frameSlot + offset:
         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
     
         frames = np.empty((frameSlot, frame_height, frame_width), dtype=np.uint8)
@@ -186,15 +193,28 @@ while True:
         # DEBUG: print image with bbox
         #img = results[0].plot()
         #cv2.imwrite("test.jpg", img)
-        print("Detected object: ")
         if res.size > 0:
             for t in res:
                 label = int(t)
-                print(f" - {model.names[label]}")
+                print(f"New object detected: {model.names[label]}")
                 report_anomaly(label)
         else:
-             print("None")
+             print("No object detected")
     
         frame_idx += timeSlot  # Avanza di 3600 frame (2 minuti)
     
     cap.release()
+    end_time = time.time()
+    elapsed = end_time - start_time
+    
+    # Parametri
+    total_duration = 120 - elapsed  # secondi
+    if total_duration < 0 :
+        sleep_per_step = 0
+    else :
+        sleep_per_step = total_duration / timeSlot
+    
+    # Barra di progresso per notebook
+    # for _ in tqdm(range(timeSlot), desc=f"Waiting {120 - elapsed} seconds for a new detection"):
+    #     time.sleep(sleep_per_step)
+
