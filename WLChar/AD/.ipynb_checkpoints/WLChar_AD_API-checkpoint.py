@@ -220,6 +220,6 @@ while True:
         sleep_per_step = total_duration / timeSlot
     
     # Barra di progresso per notebook
-    # for _ in tqdm(range(timeSlot), desc=f"Waiting {120 - elapsed} seconds for a new detection"):
-    #     time.sleep(sleep_per_step)
+    for _ in tqdm(range(timeSlot), desc=f"Waiting {120 - elapsed} seconds for a new detection"):
+        time.sleep(sleep_per_step)
 

@@ -154,16 +154,17 @@ app = Flask(__name__)
 
 # *************************************************************************************************
 # route http posts to this method
-#@app.route('/run_reid', methods=['POST'])
+@app.route('/run_reid', methods=['POST'])
 
 def run_reid():
 
-    # data = request.get_json()
-    # if not data:
-    #     return jsonify({'error': 'No JSON received'}), 400
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No JSON received'}), 400
 
-    # task_id = data['task_id']
-    task_id = "PROVA_ID_TEST_0987654321"
+    task_id = data['task_id']
+    print(f"Task ID assigned from Master node: {task_id}")
+    #task_id = "PROVA_ID_TEST_0987654321"
     print("Query vehicle image received!")
     
     # === CARICA IMMAGINE ===
@@ -291,8 +292,8 @@ def run_reid():
 #start flask app
 print("Server ready!\n")
 
-#serve(app, host="0.0.0.0", port=5000)
-run_reid()
+serve(app, host="0.0.0.0", port=5000)
+#run_reid()
 
 
 
