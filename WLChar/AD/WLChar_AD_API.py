@@ -287,8 +287,8 @@ def run_ad():
         
         # Barra di progresso per notebook
         #for _ in tqdm(range(timeSlot), desc=f"Waiting {120 - elapsed} seconds for a new detection"):
-        # for _ in tqdm(range(timeSlot), desc=f"Waiting for a new detection"):
-        #     time.sleep(sleep_per_step)
+        for _ in tqdm(range(timeSlot), desc=f"Waiting for a new detection"):
+            time.sleep(sleep_per_step)
 
 #start flask app
 #**************************************************************************************************** 
