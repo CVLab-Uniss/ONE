@@ -121,7 +121,7 @@ transform = transforms.Compose([
 # In caso di anomalia invia un messaggio all'end-point dello slave node
 def report_reid(task_id):
     # URL di destinazione
-    url = "https://flask-app-aks-nodepool1-17379992-vmss000014-service.4.232.16.189.nip.io:443/wait_for_response"
+    url = "https://flask-app-aks-nodepool1-17379992-vmss00001e-service.4.232.16.189.nip.io:443/wait_for_response"
     
     # Corpo della richiesta (payload)
     data = {
@@ -129,7 +129,7 @@ def report_reid(task_id):
     }
     
     # Token di sicurezza (sostituisci con il tuo reale token)
-    security_token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0cmFmZmljLW1hc3Rlci1ub2RlIiwic3ViIjoiMTMyLjE3Ny40OC4xMTMiLCJhdWQiOiJmbGFzay1hcHAtYWtzLW5vZGVwb29sMS0xNzM3OTk5Mi12bXNzMDAwMDE0LXNlcnZpY2UuNC4yMzIuMTYuMTg5Lm5pcC5pbyIsImlhdCI6MTc1NDA0NjQxNywiZXhwIjoxNzYyNjg2NDE3LCJzY29wZSI6ImNhbWVyYV9hcGkifQ.ylULJvR99_kNe9cepx81NPLGbc6y4lrT2sisaMRRtmshC1aoGJR54iheHrQKyHfG1R6HvvlK773N1S0Ozg4x15Ti3czAsteDxn9a2gqAJZw2PDQmdMfrjOoNDgzeikmrmyOaZyf9ZvoMHUM854OgugfXkKPeY6vGwdJv8xTDa6eANIUFlc2OXeeveo5VNYwrxxRTd7GTD0_xXpStQsLSIyN2PuGKrafuUqEm69MQmMWAlBIetnHG7A1GNFsT6GKvNhQyI6lUabiJuQTDrmZbVzbCggbs0hZTBLcMYNtkh5SkaEISRPartAFAqz3HOL5LM57C2oF9uB7X8q2uVzN6rA"
+    security_token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0cmFmZmljLW1hc3Rlci1ub2RlIiwic3ViIjoiMTMyLjE3Ny40OC4xMTMiLCJhdWQiOiJmbGFzay1hcHAtYWtzLW5vZGVwb29sMS0xNzM3OTk5Mi12bXNzMDAwMDFlLXNlcnZpY2UuNC4yMzIuMTYuMTg5Lm5pcC5pbyIsImlhdCI6MTc1Njc1ODU0NiwiZXhwIjoxNzY1Mzk4NTQ2LCJzY29wZSI6ImNhbWVyYV9hcGkifQ.BQBmwZON-UawRZ-nBT5oQcmbc0vv7Eq4-8bkClU8A1sQMrpRxKal2xFxWxJGJYkjVpmV2Utm1VF7Mgwrn4041GTb0XtVHzNhBVeo16Ids6QdfBLSWw34CzbcS2kDOh2kJfqpJ90GN4n1-o-PmSL4k7gxFpRyEXHHGeigL5S0yvH8-uPrHs0kIFrxhvF0SYnV2L64hqBnwRiTOYoMNAK2kG6Pe4NfX4tt9KU74bV9Q9QRl3mn41ppWRghKTPmZmVnWmAB3w7s6qpLWIkgcF6DkSaXqad6p_Kom8u-jCZRMo4W6HrMIlENfb7amPc_RPU_b5E0YsDB4RLNuCeCStjUCw"
     
     # Headers con token di autorizzazione
     headers = {
@@ -146,6 +146,7 @@ def report_reid(task_id):
     # Stampa la risposta del server
     print(f"Status code: {response.status_code}")
     print("Response body:", response.text)
+    #print("Status code: 200OK! \n Message sent to flask-app-aks-nodepool1-17379992-vmss0000014-service Node")
     return response
 
 # *************************************************************************************************
@@ -163,8 +164,10 @@ def run_reid():
         return jsonify({'error': 'No JSON received'}), 400
 
     task_id = data['task_id']
-    print(f"Task ID assigned from Master node: {task_id}")
+    #print(f"************************** TASK ID: {task_id}")
     #task_id = "PROVA_ID_TEST_0987654321"
+    
+    print(f"Task ID assigned from Master node: {task_id}")
     print("Query vehicle image received!")
     
     # === CARICA IMMAGINE ===

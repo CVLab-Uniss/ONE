@@ -19,6 +19,9 @@ import torch
 import time
 from tqdm import tqdm
 
+from waitress import serve
+from flask import Flask, request, Response, jsonify, make_response
+
 import requests
 import json
 import urllib3
@@ -70,27 +73,56 @@ print(f"Local device in use: {device_local}")
 print(f"Object detection model in use: {model_name}")
 print("\n")
 
-print("********** START RE-IDENTIFICATION TASK **********")
+print("********** START ANOMALY DETECTION TASK **********")
 
 # In caso di anomalia invia un messaggio all'end-point dello slave node
-def report_anomaly(object_type):
+def report_anomaly(object_type, token, end_point):
     # URL di destinazione
-    url = "https://flask-app-aks-nodepool1-17379992-vmss000014-service.4.232.16.189.nip.io:443/report_anomaly"
+    url = f"https://{end_point}:443/report_anomaly"
     anomaly_type = object_type
     
     # Corpo della richiesta (payload)
     data = {
-        "slave_node_ip": "flask-app-aks-nodepool1-17379992-vmss0000014-service",
+        "slave_node_ip": end_point.split('.')[0],
         "anomaly_type": object_type,
         "timestamp": "2025-06-03 15:25:12",
         "vehicle_brand": "VW",
         "vehicle_model": "GOLF5",
         "vehicle_color": "white "
     }
+
+        
+    # Headers con token di autorizzazione
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {token}"
+    }
+    
+    # Disabilita i warning per certificati self-signed (facoltativo ma utile se il certificato HTTPS non è valido)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    
+    # Invia la richiesta POST
+    response = requests.post(url, data=json.dumps(data), headers=headers, verify=False)
+    
+    # Stampa la risposta del server
+    print(f"Status code: {response.status_code}")
+    print("Response body:", response.text)
+    #print("Status code: 200OK! \n Message sent to flask-app-aks-nodepool1-17379992-vmss0000014-service Node")
+    return response
+
+def get_slave(task_id):
+    # URL di destinazione
+    url = "https://4.232.16.189.nip.io/status"
+    
+    # Corpo della richiesta (payload)
+    data = {
+        "task_id": task_id,
+    }
     
     # Token di sicurezza (sostituisci con il tuo reale token)
-    security_token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0cmFmZmljLW1hc3Rlci1ub2RlIiwic3ViIjoiMTMyLjE3Ny40OC4xMTMiLCJhdWQiOiJmbGFzay1hcHAtYWtzLW5vZGVwb29sMS0xNzM3OTk5Mi12bXNzMDAwMDE0LXNlcnZpY2UuNC4yMzIuMTYuMTg5Lm5pcC5pbyIsImlhdCI6MTc1NDA0NjQxNywiZXhwIjoxNzYyNjg2NDE3LCJzY29wZSI6ImNhbWVyYV9hcGkifQ.ylULJvR99_kNe9cepx81NPLGbc6y4lrT2sisaMRRtmshC1aoGJR54iheHrQKyHfG1R6HvvlK773N1S0Ozg4x15Ti3czAsteDxn9a2gqAJZw2PDQmdMfrjOoNDgzeikmrmyOaZyf9ZvoMHUM854OgugfXkKPeY6vGwdJv8xTDa6eANIUFlc2OXeeveo5VNYwrxxRTd7GTD0_xXpStQsLSIyN2PuGKrafuUqEm69MQmMWAlBIetnHG7A1GNFsT6GKvNhQyI6lUabiJuQTDrmZbVzbCggbs0hZTBLcMYNtkh5SkaEISRPartAFAqz3HOL5LM57C2oF9uB7X8q2uVzN6rA"
-    
+    security_token = "my_super_very_secret_key_123!"
+
+        
     # Headers con token di autorizzazione
     headers = {
         "Content-Type": "application/json",
@@ -105,8 +137,22 @@ def report_anomaly(object_type):
     
     # Stampa la risposta del server
     print(f"Status code: {response.status_code}")
-    print("Response body:", response.text)
-    return response
+    try:
+        # Converte la risposta in JSON (dizionario Python)
+        slave_data = response.json()
+        
+        # Estrai i valori desiderati
+        security_token = slave_data.get("camera_token")
+        slave_ep = slave_data.get("external_ip")
+        #print("Security Token:", security_token)
+        #print("External IP:", slave_ep)
+    
+    except ValueError:
+        print("Errore: la risposta non contiene JSON valido")
+    #{"camera_node_ip":"192.168.1.500","camera_token":"","external_ip":"","status":"in-progress","timestamp":"1756804498.4074333"}
+    
+    #print("Status code: 200OK! \n Message sent to flask-app-aks-nodepool1-17379992-vmss0000014-service Node")
+    return security_token, slave_ep
 
 # Funzioni di pre-processing
 def add_margin(pil_img, top, right, bottom, left, color):
@@ -131,95 +177,123 @@ def preProcImg(image):
     return add_margin(image, t, r, b, l, 0)
 
 
-# Parametri
-total_duration = 12  # secondi
-sleep_per_step = total_duration / frameSlot
+# *************************************************************************************************
+# Initialize the Flask application
+app = Flask(__name__)
 
-while True:
-    video_name = random.choice(video_list)
-    video_path = os.path.join(video_dir, video_name)
-    #print(f"Video selezionato: {video_name}")
-    print("Starting acquisition for background estimation")
+# *************************************************************************************************
+# route http posts to this method
+@app.route('/run_ad', methods=['POST'])
 
-    # Barra di progresso per notebook
-    for _ in tqdm(range(frameSlot), desc="Acquiring 360 frames from camera (12 seconds)"):
-        time.sleep(sleep_per_step)
-    # Apre il video selezionato
-    cap = cv2.VideoCapture(video_path)
-    start_time = time.time()
-    if not cap.isOpened():
-        raise IOError(f"Errore nell'apertura del video: {video_name}")
-    
-    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    # print(f"Totale frame nel video: {frame_count}")
-
-    #adding an offset for variability
-    max_offset = frame_count - 3690
-    if max_offset <= 0:
-        raise ValueError("Il video è troppo corto per sottrarre 3690 frame.")
-    
-    # genera offset casuale
-    offset = random.randint(0, max_offset)
-    frame_idx = offset
-    #print(offset)
-    
-    while frame_idx + frameSlot <= frameSlot + offset:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-    
-        frames = np.empty((frameSlot, frame_height, frame_width), dtype=np.uint8)
-    
-        for i in range(frameSlot):
-            ret, frame = cap.read()
-            if not ret:
-                print(f"Errore nella lettura del frame {frame_idx + i}")
-                break
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            frames[i] = gray
-    
-        # Calcolo della mediana dei frame
-        median_frame = np.median(frames, axis=0).astype(np.uint8)
-        im = Image.fromarray(median_frame)
-        im = preProcImg(im)
-        im_width, im_height = im.size
-    
-        # Rilevamento oggetti con YOLO
-        results = model.predict(im,
-                                imgsz=[im_height, im_width],
-                                augment=True,
-                                retina_masks=True,
-                                device=device_local,
-                                conf=0.35,
-                                classes=[0, 1, 2, 3, 5, 6, 7, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23],
-                                verbose=False)
-    
-        res = results[0].boxes.cls.cpu().numpy()
-        # DEBUG: print image with bbox
-        #img = results[0].plot()
-        #cv2.imwrite("test.jpg", img)
-        if res.size > 0:
-            for t in res:
-                label = int(t)
-                print(f"New object detected: {model.names[label]}")
-                report_anomaly(label)
-        else:
-             print("No object detected")
-    
-        frame_idx += timeSlot  # Avanza di 3600 frame (2 minuti)
-    
-    cap.release()
-    end_time = time.time()
-    elapsed = end_time - start_time
-    
+def run_ad():
     # Parametri
-    total_duration = 120 - elapsed  # secondi
-    if total_duration < 0 :
-        sleep_per_step = 0
-    else :
-        sleep_per_step = total_duration / timeSlot
+    total_duration = 12  # secondi
+    sleep_per_step = total_duration / frameSlot
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No JSON received'}), 400
+
+    task_id = data['task_id']
+    #print(f"************************** TASK ID: {task_id}")
+    #task_id = "PROVA_ID_TEST_0987654321"
+    print(f"Task ID assigned from Master node: {task_id}")
+
+    token, end_point = get_slave(task_id)
     
-    # Barra di progresso per notebook
-    for _ in tqdm(range(timeSlot), desc=f"Waiting {120 - elapsed} seconds for a new detection"):
-        time.sleep(sleep_per_step)
+    while True:
+        video_name = random.choice(video_list)
+        video_path = os.path.join(video_dir, video_name)
+        #print(f"Video selezionato: {video_name}")
+        print("Starting acquisition for background estimation")
+    
+        # Barra di progresso per notebook
+        for _ in tqdm(range(frameSlot), desc="Acquiring 360 frames from camera (12 seconds)"):
+            time.sleep(sleep_per_step)
+        # Apre il video selezionato
+        cap = cv2.VideoCapture(video_path)
+        start_time = time.time()
+        if not cap.isOpened():
+            raise IOError(f"Errore nell'apertura del video: {video_name}")
+        
+        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        # print(f"Totale frame nel video: {frame_count}")
+    
+        #adding an offset for variability
+        max_offset = frame_count - 3690
+        if max_offset <= 0:
+            raise ValueError("Il video è troppo corto per sottrarre 3690 frame.")
+        
+        # genera offset casuale
+        offset = random.randint(0, max_offset)
+        frame_idx = offset
+        #print(offset)
+        
+        while frame_idx + frameSlot <= frameSlot + offset:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+        
+            frames = np.empty((frameSlot, frame_height, frame_width), dtype=np.uint8)
+        
+            for i in range(frameSlot):
+                ret, frame = cap.read()
+                if not ret:
+                    print(f"Errore nella lettura del frame {frame_idx + i}")
+                    break
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                frames[i] = gray
+        
+            # Calcolo della mediana dei frame
+            median_frame = np.median(frames, axis=0).astype(np.uint8)
+            im = Image.fromarray(median_frame)
+            im = preProcImg(im)
+            im_width, im_height = im.size
+        
+            # Rilevamento oggetti con YOLO
+            results = model.predict(im,
+                                    imgsz=[im_height, im_width],
+                                    augment=True,
+                                    retina_masks=True,
+                                    device=device_local,
+                                    conf=0.35,
+                                    classes=[0, 1, 2, 3, 5, 6, 7, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23],
+                                    verbose=False)
+        
+            res = results[0].boxes.cls.cpu().numpy()
+            # DEBUG: print image with bbox
+            #img = results[0].plot()
+            #cv2.imwrite("test.jpg", img)
+            if res.size > 0:
+                for t in res:
+                    label = int(t)
+                    print(f"Anomaly detected: {model.names[label]}")
+                    report_anomaly(label, token, end_point)
+            else:
+                 print("No anomaly detected")
+        
+            frame_idx += timeSlot  # Avanza di 3600 frame (2 minuti)
+        
+        cap.release()
+        end_time = time.time()
+        elapsed = end_time - start_time
+        
+        # Parametri
+        total_duration = 120 - elapsed  # secondi
+        if total_duration < 0 :
+            sleep_per_step = 0
+        else :
+            sleep_per_step = total_duration / timeSlot
+        
+        # Barra di progresso per notebook
+        #for _ in tqdm(range(timeSlot), desc=f"Waiting {120 - elapsed} seconds for a new detection"):
+        # for _ in tqdm(range(timeSlot), desc=f"Waiting for a new detection"):
+        #     time.sleep(sleep_per_step)
+
+#start flask app
+#**************************************************************************************************** 
+print("Server ready!\n")
+
+serve(app, host="0.0.0.0", port=5000)
+#run_ad()
 
