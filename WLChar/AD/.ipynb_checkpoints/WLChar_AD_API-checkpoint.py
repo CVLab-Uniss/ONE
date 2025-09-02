@@ -136,7 +136,7 @@ def get_slave(task_id):
     response = requests.post(url, data=json.dumps(data), headers=headers, verify=False)
     
     # Stampa la risposta del server
-    print(f"Status code: {response.status_code}")
+    #print(f"Status code: {response.status_code}")
     try:
         # Converte la risposta in JSON (dizionario Python)
         slave_data = response.json()
@@ -287,8 +287,8 @@ def run_ad():
         
         # Barra di progresso per notebook
         #for _ in tqdm(range(timeSlot), desc=f"Waiting {120 - elapsed} seconds for a new detection"):
-        for _ in tqdm(range(timeSlot), desc=f"Waiting for a new detection"):
-            time.sleep(sleep_per_step)
+        # for _ in tqdm(range(timeSlot), desc=f"Waiting for a new detection"):
+        #     time.sleep(sleep_per_step)
 
 #start flask app
 #**************************************************************************************************** 

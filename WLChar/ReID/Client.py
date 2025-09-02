@@ -11,8 +11,8 @@ addr = 'http://localhost:5000/'
 #addr = 'http://20.33.92.85:5000/'
 
 #test_url = addr + 'api/image_description' #endpoint per Anomaly Detection
-#url = addr + 'run_reid' 
-url = addr + 'run_ad'
+url = addr + 'run_reid' 
+#url = addr + 'run_ad'
 
 # Corpo della richiesta (payload)
 data = {

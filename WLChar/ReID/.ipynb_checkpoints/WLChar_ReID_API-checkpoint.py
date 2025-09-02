@@ -119,9 +119,36 @@ transform = transforms.Compose([
 ]) 
 
 # In caso di anomalia invia un messaggio all'end-point dello slave node
-def report_reid(task_id):
+def report_reid(task_id, token, end_point):
     # URL di destinazione
-    url = "https://flask-app-aks-nodepool1-17379992-vmss00001e-service.4.232.16.189.nip.io:443/wait_for_response"
+    url = f"https://{end_point}:443/wait_for_response"
+    
+    # Corpo della richiesta (payload)
+    data = {
+        "task_id": task_id,
+    }
+    
+    # Headers con token di autorizzazione
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {token}"
+    }
+    
+    # Disabilita i warning per certificati self-signed (facoltativo ma utile se il certificato HTTPS non è valido)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    
+    # Invia la richiesta POST
+    response = requests.post(url, data=json.dumps(data), headers=headers, verify=False)
+    
+    # Stampa la risposta del server
+    #print(f"Status code: {response.status_code}")
+    #print("Response body:", response.text)
+    print(f"Status code: 200OK! \n Message sent to {end_point} Node")
+    return response
+
+def get_slave(task_id):
+    # URL di destinazione
+    url = "https://4.232.16.189.nip.io/status"
     
     # Corpo della richiesta (payload)
     data = {
@@ -129,8 +156,9 @@ def report_reid(task_id):
     }
     
     # Token di sicurezza (sostituisci con il tuo reale token)
-    security_token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0cmFmZmljLW1hc3Rlci1ub2RlIiwic3ViIjoiMTMyLjE3Ny40OC4xMTMiLCJhdWQiOiJmbGFzay1hcHAtYWtzLW5vZGVwb29sMS0xNzM3OTk5Mi12bXNzMDAwMDFlLXNlcnZpY2UuNC4yMzIuMTYuMTg5Lm5pcC5pbyIsImlhdCI6MTc1Njc1ODU0NiwiZXhwIjoxNzY1Mzk4NTQ2LCJzY29wZSI6ImNhbWVyYV9hcGkifQ.BQBmwZON-UawRZ-nBT5oQcmbc0vv7Eq4-8bkClU8A1sQMrpRxKal2xFxWxJGJYkjVpmV2Utm1VF7Mgwrn4041GTb0XtVHzNhBVeo16Ids6QdfBLSWw34CzbcS2kDOh2kJfqpJ90GN4n1-o-PmSL4k7gxFpRyEXHHGeigL5S0yvH8-uPrHs0kIFrxhvF0SYnV2L64hqBnwRiTOYoMNAK2kG6Pe4NfX4tt9KU74bV9Q9QRl3mn41ppWRghKTPmZmVnWmAB3w7s6qpLWIkgcF6DkSaXqad6p_Kom8u-jCZRMo4W6HrMIlENfb7amPc_RPU_b5E0YsDB4RLNuCeCStjUCw"
-    
+    security_token = "my_super_very_secret_key_123!"
+
+        
     # Headers con token di autorizzazione
     headers = {
         "Content-Type": "application/json",
@@ -144,10 +172,23 @@ def report_reid(task_id):
     response = requests.post(url, data=json.dumps(data), headers=headers, verify=False)
     
     # Stampa la risposta del server
-    print(f"Status code: {response.status_code}")
-    print("Response body:", response.text)
+    #print(f"Status code: {response.status_code}")
+    try:
+        # Converte la risposta in JSON (dizionario Python)
+        slave_data = response.json()
+        
+        # Estrai i valori desiderati
+        security_token = slave_data.get("camera_token")
+        slave_ep = slave_data.get("external_ip")
+        #print("Security Token:", security_token)
+        #print("External IP:", slave_ep)
+    
+    except ValueError:
+        print("Errore: la risposta non contiene JSON valido")
+    #{"camera_node_ip":"192.168.1.500","camera_token":"","external_ip":"","status":"in-progress","timestamp":"1756804498.4074333"}
+    
     #print("Status code: 200OK! \n Message sent to flask-app-aks-nodepool1-17379992-vmss0000014-service Node")
-    return response
+    return security_token, slave_ep
 
 # *************************************************************************************************
 # Initialize the Flask application
@@ -168,6 +209,8 @@ def run_reid():
     #task_id = "PROVA_ID_TEST_0987654321"
     
     print(f"Task ID assigned from Master node: {task_id}")
+    token, end_point = get_slave(task_id)
+    
     print("Query vehicle image received!")
     
     # === CARICA IMMAGINE ===
@@ -283,7 +326,7 @@ def run_reid():
                 #print("Query vehicle found in camera num. ", cam, " (vehicle id:", img_id,")")
                 print("Query vehicle identified!") 
                 #display(image.resize((250,250)))
-                report_reid(task_id)
+                report_reid(task_id, token, end_point)
             else:
                 bestIdx = indexes[0][0]
                 image = Image.open(images[bestIdx])
