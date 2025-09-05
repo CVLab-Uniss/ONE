@@ -161,8 +161,8 @@ faiss.normalize_L2(vector)
 
 # CALCULATE FEATURES FOR GALLERY IMAGES
 # new vector without the query image (camera num 14)
-camera_vect = [2, 30, 39, 102, 3, 172, 23, 137, 14, 79, 34, 78, 41, 51, 111, 110, 94, 139, 163, 122, 81]
-#camera_vect = [2] 
+#camera_vect = [2, 30, 39, 102, 3, 172, 23, 137, 14, 79, 34, 78, 41, 51, 111, 110, 94, 139, 163, 122, 81]
+camera_vect = [2] 
 
 datasetPath =  '../../Demo_ReID/Demo_cameras/'
 print("Query image (vehicle id: ", img_id, ")")
