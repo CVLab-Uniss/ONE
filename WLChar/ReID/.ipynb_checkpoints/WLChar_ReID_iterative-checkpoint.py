@@ -28,197 +28,202 @@
 #         return x
 # LA FUNZIONE PIÙ RECENTE (NON FUNZIONANTE PER NOI) È PRESENTE IN ATTENTION_OLD.PY (~/.cache/torch/hub/facebookresearch_dinov2_main/dinov2/layers/)
 
+
+import os
+import time
+import torch
+import faiss
 import pandas as pd
+import numpy as np
+import statistics as st
+from PIL import Image
+from copy import deepcopy
+from torchvision import datasets, transforms
+from torch import nn, optim
+from tqdm import tqdm
+from ultralytics import YOLO
+from transformers import AutoImageProcessor, AutoModel
+import cv2
+import matplotlib.pyplot as plt
+import csv
 import shutil
 
-import torch
-from transformers import AutoImageProcessor, AutoModel
-from PIL import Image
-import numpy as np
-import os
-import faiss
-import time
-from torchvision import transforms 
-from torch import nn, optim
-from torchvision import datasets, transforms
-from copy import deepcopy
-import matplotlib.pyplot as plt
-from tqdm import tqdm
-import statistics as st
 
-from ultralytics import YOLO
-import cv2
 
+
+# =================== CONFIG ===================
 filename = '../../Demo_ReID/test_3000_id.txt'
-dinov2_vits14 = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
-device = "cpu"
-#device = "cuda"
-#device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+model_path = '../../Demo_ReID/test_full.pth'
+input_image_path = "low_traffic.jpeg"
+output_folder = "cropped_objects"
+datasetPath = '../../Demo_ReID/Demo_cameras/'
+camera_vect = [2]  # cameras to scan in gallery
+OUTPUT_CSV = "reid_iterations_timings.csv"
+it_number = 300
+vehicle_classes = [2, 3, 5, 7]  # car, motorcycle, bus, truck
+
+# =================== DEVICE ===================
+#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = 'cpu'
 print("DEVICE used: ", device)
 
+# =================== LOAD DATA ===================
 df = pd.read_csv(filename, sep=" ", header=None, names=["img", "v_id", "c_id"])
 
+# =================== DEFINE TRANSFORMS ===================
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406],
+                         [0.229, 0.224, 0.225])
+])
+
+# =================== PREPARE DINO & MODEL CLASS ===================
+# carichiamo dinov2
+dinov2_vits14 = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
+
+# se nel checkpoint la classe custom era salvata come in precedenza, definiamola qui prima del torch.load
 class_names = 30671
-param = round(class_names/4)
+param = round(class_names / 4)
 
 class DinoVisionTransformerClassifier(nn.Module):
     def __init__(self):
         super(DinoVisionTransformerClassifier, self).__init__()
         self.transformer = deepcopy(dinov2_vits14)
-        self.classifier = nn.Sequential(nn.Linear(384, param), nn.ReLU(), nn.Linear(param, len(class_names)))
+        self.classifier = nn.Sequential(
+            nn.Linear(384, param),
+            nn.ReLU(),
+            nn.Linear(param, class_names)
+        )
 
     def forward(self, x, return_embeddings=False):
         embeddings = self.transformer(x)
-        
         if return_embeddings:
-            # Se richiesto, restituisce solo gli embeddings
             return embeddings
-        
         x = self.transformer.norm(embeddings)
         x = self.classifier(x)
         return x
 
-#Define transformations for the dataset 
-transform = transforms.Compose([ 
-    transforms.Resize((224, 224)), 
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-]) 
+# =============== LOAD MODEL (test_full.pth & YOLO) ===============
+model = torch.load(model_path, map_location=torch.device(device))
+model.eval()
+print("Modello .pth caricato correttamente.")
 
-# ********************* BBOX with YOLO *************************
+yolo_model_path = "yolo11m.pt"
+model_yolo = YOLO(yolo_model_path)
+print("Modello YOLO caricato correttamente.")
 
-# === PARAMETRI ===
-input_image_path = "low_traffic.jpeg"         # Percorso immagine di input
-output_folder = "cropped_objects"      # Cartella dove salvare i ritagli
-#model_path = "yolov8m.pt"              # Modello YOLOv8
-model_path = "yolo11m.pt" 
-# === CREA CARTELLA DI OUTPUT SE NECESSARIO ===
-os.makedirs(output_folder, exist_ok=True)
 
-# === CARICA MODELLO YOLO ===
-model_yolo = YOLO(model_path)
 
-# === CLASSE VEICOLI (COCO classes) ===
-vehicle_classes = [2, 3, 5, 7]  # car, motorcycle, bus, truck
 
-# === CARICA IMMAGINE ===
-img_bgr = cv2.imread(input_image_path)
-if img_bgr is None:
-    raise FileNotFoundError(f"Immagine non trovata: {input_image_path}")
+# **************BEGINNING OF THE ITERATIVE PROCEDURE***************
+for it in range(it_number):
+    print(f"\nIterazione {it+1} iniziata.")
+    start_time = time.time()
 
-img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    # =================== DETECT VEHICLES WITH YOLO ===================
+    os.makedirs(output_folder, exist_ok=True)
 
-# === PREDIZIONE ===
-results = model_yolo.predict(source=img_rgb,
-                        conf=0.35,
-                        classes=vehicle_classes,
-                        device=device,   # Cambia in "cuda" se hai una GPU
-                        verbose=False)
+    img_bgr = cv2.imread(input_image_path)
+    if img_bgr is None:
+        raise FileNotFoundError(f"Immagine non trovata: {input_image_path}")
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
-# === ESTRAI BBOX E SALVA RITAGLI ===
-boxes = results[0].boxes
-if boxes is not None and boxes.xyxy is not None:
-    for i, box in enumerate(boxes.xyxy):
-        x1, y1, x2, y2 = map(int, box[:4])
-        cropped = img_rgb[y1:y2, x1:x2]
-        cropped_pil = Image.fromarray(cropped)
-        save_path = os.path.join(output_folder, f"object_{i+1}.jpg")
-        cropped_pil.save(save_path)
-        print(f"Salvato: {save_path}")
-else:
-    print("Nessun veicolo rilevato.")
+    results = model_yolo.predict(
+        source=img_rgb,
+        conf=0.35,
+        classes=vehicle_classes,
+        device="cuda" if torch.cuda.is_available() else "cpu",
+        verbose=False
+    )
 
-# ********************* LOAD MODEL AND CALCULATE QUERY FEATURES *******************
+    boxes = results[0].boxes
+    if boxes is not None and boxes.xyxy is not None:
+        for i, box in enumerate(boxes.xyxy):
+            x1, y1, x2, y2 = map(int, box[:4])
+            cropped = img_rgb[y1:y2, x1:x2]
+            cropped_pil = Image.fromarray(cropped)
+            save_path = os.path.join(output_folder, f"object_{i+1}.jpg")
+            cropped_pil.save(save_path)
+            print(f"Salvato: {save_path}")
+    else:
+        print("Nessun veicolo rilevato.")
 
-#model_name = 'test_mini_EE1.pth'
-model_name = '../../Demo_ReID/test_full.pth'
-#model = torch.load(model_name).to(device)
-model = torch.load(model_name, map_location=torch.device(device))
+    # =================== QUERY ===================
+    testImage = '../../Demo_ReID/Demo_cameras/14/002791.jpg'
+    df_filt = df.loc[df['img'].str.contains(os.path.basename(testImage))]
+    img_id = df_filt['img'].values[0].split('/')[0]
 
-# ********************* QUERY *******************
+    # Carica e trasforma immagine query
+    testimg_or = Image.open(testImage).convert('RGB')
+    testimg = transform(testimg_or).unsqueeze(0).to(device)
 
-testImage = '../../Demo_ReID/Demo_cameras/14/002791.jpg' #query image for veichle id 256
-#testImage = 'Demo_cameras/14/001492.jpg' #query image for veichle id 145 (failed)
-#testImage = 'Demo_cameras/14/004171.jpg' #query image for veichle id 408
-
-df_filt = df.loc[df['img'].str.contains(testImage.split('/')[-1])]
-img_id = df_filt['img'].values[0].split('/')[0]
-
-#query image
-testimg_or = Image.open(testImage).convert('RGB')
-testimg = transform(testimg_or).unsqueeze(0).to(device)  
-
-#Extract the features
-with torch.no_grad():
+    # Estrai feature query
+    with torch.no_grad():
         outputs = model(testimg, return_embeddings=True)
 
-#Normalize the features before search
-vector = outputs.detach().cpu().numpy()
-vector = np.float32(vector)
-faiss.normalize_L2(vector)
+    vector = outputs.detach().cpu().numpy().astype(np.float32)
+    faiss.normalize_L2(vector)
 
-# ********************* GALLERY *******************
+    print("Query image (vehicle id: ", img_id, ")")
 
-# CALCULATE FEATURES FOR GALLERY IMAGES
-# new vector without the query image (camera num 14)
-#camera_vect = [2, 30, 39, 102, 3, 172, 23, 137, 14, 79, 34, 78, 41, 51, 111, 110, 94, 139, 163, 122, 81]
-camera_vect = [2] 
+    # =================== ITERATIVE REID ===================
 
-datasetPath =  '../../Demo_ReID/Demo_cameras/'
-print("Query image (vehicle id: ", img_id, ")")
-#display(testimg_or.resize((250,250)))
+    # Crea CSV con intestazione se non esiste per gli output sul volume Docker
+    if not os.path.exists(OUTPUT_CSV):
+        with open(OUTPUT_CSV, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["elapsed_time"])
 
-for cam in camera_vect:
-    #print("Camera id:", cam)
-    #Populate the images variable with all the images in the dataset folder
-    images = []
+    for cam in camera_vect:
+        images = []
+        cam_path = os.path.join(datasetPath, str(cam))
+        for root, dirs, files in os.walk(cam_path):
+            for file in files:
+                if file.endswith('.jpg'):
+                    images.append(os.path.join(root, file))
 
-    for root, dirs, files in os.walk(datasetPath + str(cam)):
-        for file in files:
-            if file.endswith('jpg'):
-                images.append(root  + '/'+ file)
 
-    #Define a function that normalizes embeddings and add them to the index
-    def add_vector_to_index(embedding, index):
-        vector = embedding.detach().cpu().numpy()
-        vector = np.float32(vector)
-        #Normalize vector: important to avoid wrong results when searching
-        faiss.normalize_L2(vector)
-        index.add(vector)
+        # Crea indice FAISS
+        index = faiss.IndexFlatL2(384)
 
-    #Create Faiss index using FlatL2 type with 384 features
-    index = faiss.IndexFlatL2(384) #small
+        # Funzione per aggiungere vettori normalizzati
+        def add_vector_to_index(embedding, index):
+            vec = embedding.detach().cpu().numpy().astype(np.float32)
+            faiss.normalize_L2(vec)
+            index.add(vec)
 
-    t0 = time.time()
-    for image_path in images:
-        img = Image.open(image_path).convert('RGB')
-        img = transform(img).unsqueeze(0).to(device)  
-        with torch.no_grad():
-            outputs = model(img, return_embeddings=True)
-        add_vector_to_index(outputs, index)
+        # Estrai feature gallery e aggiungi a FAISS
+        for img_path in images:
+            img = Image.open(img_path).convert('RGB')
+            img_tensor = transform(img).unsqueeze(0).to(device)
+            with torch.no_grad():
+                feat = model(img_tensor, return_embeddings=True)
+            add_vector_to_index(feat, index)
 
-    #print('Extraction done in :', time.time()-t0)
-    
-    distances, indexes = index.search(vector, 5)
-    #print('distances:', distances, 'indexes:', indexes)
-    
-    dist_vec = []
-    id = 0
-    for i in indexes[0]:
-        im = images[i]
-        img_id = im.split('/')[-1]
-        dist_vec.append(distances[0, id])
-        id = id +1 
-    
-    if (distances[0, 0] < 1.0) and (st.variance(dist_vec) > 0.02):
+        # k-NN search
+        distances, indexes = index.search(vector, 5)
+        dist_vec = [distances[0, i] for i in range(len(indexes[0]))]
         bestIdx = indexes[0][0]
-        image = Image.open(images[bestIdx])
-        df_filt = df.loc[df['img'].str.contains(images[bestIdx].split('/')[-1])]
-        img_id = df_filt['img'].values[0].split('/')[0]
-        print("Query vehicle found in camera num. ", cam, " (vehicle id:", img_id,")")
-        #display(image.resize((250,250)))
-    else:
-        bestIdx = indexes[0][0]
-        image = Image.open(images[bestIdx])
-        print("Query vehicle NOT found in camera num. ", cam)
-        # display(image) #uncomment for debug
+        best_image_path = images[bestIdx]
+
+        if distances[0, 0] < 1.0 and st.variance(dist_vec) > 0.02:
+            df_filt = df.loc[df['img'].str.contains(os.path.basename(best_image_path))]
+            img_id_best = df_filt['img'].values[0].split('/')[0]
+            print(f"Query vehicle found in camera {cam} (vehicle id: {img_id_best})")
+        else:
+            print(f"Query vehicle NOT found in camera {cam}")
+
+    # =================== TIMINGS ===================
+    elapsed_time = time.time() - start_time
+
+
+    # Salva timing CSV
+    try:
+        with open(OUTPUT_CSV, "a", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([elapsed_time])
+    except Exception as e:
+        print(f"Impossibile scrivere su {OUTPUT_CSV}: {e}")
+
+    print(f"Iterazione {it+1} terminata. Tempo totale: {elapsed_time:.3f}s")
