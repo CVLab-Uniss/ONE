@@ -197,13 +197,13 @@ def run_ad():
     #     return jsonify({'error': 'No JSON received'}), 400
 
     # edge_id = os.getenv("EDGE_DEVICE_ID")
-    # end_point = os.getenv("SLAVE_URL") 
-    # token = os.getenv("SLAVE_TOKEN")
+    end_point = os.getenv("SLAVE_URL") 
+    token = os.getenv("SLAVE_TOKEN")
     # print(f"Info about slave node received from Master node! \n end_point= {end_point}, token={token}")
     
-    end_point = "slave-gateway-oristano-01.128.203.65.69.nip.io"
-    token = "edge-temporary-token" 
-    print(f"Info about slave node received from Master node! \n end_point= {end_point}, token={token}")
+    # end_point = "slave-gateway-oristano-01.128.203.65.69.nip.io"
+    # token = "edge-temporary-token" 
+    # print(f"Info about slave node received from Master node! \n end_point= {end_point}, token={token}")
 
     
     while True:
