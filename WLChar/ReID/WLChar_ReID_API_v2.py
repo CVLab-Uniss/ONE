@@ -196,7 +196,7 @@ def report_reid(token, end_point):
 
 # *************************************************************************************************
 # Initialize the Flask application
-app = Flask(__name__)
+#pp = Flask(__name__)
 
 # *************************************************************************************************
 # route http posts to this method
