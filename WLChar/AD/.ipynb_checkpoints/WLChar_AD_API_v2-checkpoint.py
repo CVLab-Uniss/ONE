@@ -196,7 +196,7 @@ def run_ad():
     # if not data:
     #     return jsonify({'error': 'No JSON received'}), 400
 
-    # edge_id = os.getenv("EDGE_DEVICE_ID")
+    edge_id = os.getenv("EDGE_DEVICE_ID")
     end_point = os.getenv("SLAVE_URL") 
     token = os.getenv("SLAVE_TOKEN")
     # print(f"Info about slave node received from Master node! \n end_point= {end_point}, token={token}")

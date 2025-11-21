@@ -1,0 +1,389 @@
+# Questo script implementa un sistema di Re-Identification (ReID) per veicoli basato su visione artificiale, che integra modelli di deep learning e tecniche di ricerca approssimata di vettori. 
+# L'architettura si fonda sull'utilizzo combinato di YOLO per il rilevamento di oggetti (bounding boxes di veicoli) e DinoV2 come estrattore di caratteristiche tramite una Vision Transformer.
+# Il sistema è articolato nelle seguenti fasi principali:
+# 1. Caricamento dei dati: vengono letti i metadati delle immagini da un file `.txt` contenente ID veicolo e ID della telecamera.
+# 2. Definizione del modello: viene costruita una rete neurale personalizzata che estende DinoV2 con un classificatore a più layer, finalizzata all'estrazione e classificazione delle feature.
+# 3. Pre-processing: si definisce una pipeline di trasformazioni per le immagini (ridimensionamento, normalizzazione).
+# 4. Rilevamento veicoli con YOLO: si esegue il rilevamento degli oggetti (classi COCO relative ai veicoli) su un'immagine di input, salvando i ritagli contenenti veicoli.
+# 5. Estrazione delle feature della query: a partire da un'immagine query, vengono calcolate le feature tramite il modello caricato e normalizzate per la successiva ricerca.
+# 6. Costruzione della galleria: si itera su un set di immagini (escludendo la telecamera della query), si estraggono le feature e si indicizzano con FAISS.
+# 7. Ricerca e confronto: viene effettuata una ricerca k-NN (k=5) per trovare i candidati più simili alla query. 
+#    Il veicolo viene considerato correttamente identificato se la distanza del primo risultato è sufficientemente bassa e la varianza delle distanze è significativa.
+# 8. Visualizzazione dei risultati: se il veicolo viene individuato, l'immagine corrispondente viene visualizzata insieme all'indicazione della telecamera e dell'ID veicolo.
+# Il sistema è progettato per eseguire ReID su dataset realistici e può essere adattato per l'esecuzione su CPU o GPU. 
+
+# 28/10/20205 creata nuova versione v2 con modifiche per compatibilità codice scritto da Mauro Fadda
+
+###### ATTENZIONE ######
+## IL NUOVO MODELLO DI DINO NON È COMPATIBILE CON IL CODICE. L'ERRORE E' IL SEGUENTE "TypeError: scaled_dot_product_attention(): argument 'dropout_p' must be float, not Dropout"
+## COME WORKAROUND È STATO SOSTITUITO IL FILE ATTENTION.PY: IN PARTICOLARE LA FUNZIONE FORWARD() di seguito
+# def forward(self, x: Tensor) -> Tensor:
+#         B, N, C = x.shape
+#         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+#         q, k, v = qkv[0] * self.scale, qkv[1], qkv[2]
+#         attn = q @ k.transpose(-2, -1)
+#         attn = attn.softmax(dim=-1)
+#         attn = self.attn_drop(attn)
+#         x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+#         x = self.proj(x)
+#         x = self.proj_drop(x)
+#         return x
+# LA FUNZIONE PIÙ RECENTE (NON FUNZIONANTE PER NOI) È PRESENTE IN ATTENTION_OLD.PY (~/.cache/torch/hub/facebookresearch_dinov2_main/dinov2/layers/)
+
+import pandas as pd
+import shutil
+
+import torch
+from transformers import AutoImageProcessor, AutoModel
+from PIL import Image
+import numpy as np
+import os
+import faiss
+import time
+from torchvision import transforms 
+from torch import nn, optim
+from torchvision import datasets, transforms
+from copy import deepcopy
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+import statistics as st
+
+from ultralytics import YOLO
+import cv2
+
+from waitress import serve
+from flask import Flask, request, Response, jsonify, make_response
+
+import requests
+import json
+import urllib3
+
+
+filename = '../../Demo_ReID/test_3000_id.txt'
+device = "cpu"
+#device = "cuda"
+#device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+
+#obj_det_model = "yolov8m.pt"            
+obj_det_model = "yolo11m.pt" 
+feat_extr_model = "dinov2_vits14"
+
+print(f"Local device in use: {device}")
+print(f"Object detection model in use: {obj_det_model}")
+print(f"Features extraction model in use: {feat_extr_model}")
+print("\n")
+
+print("********** START RE-IDENTIFICATION TASK **********")
+
+df = pd.read_csv(filename, sep=" ", header=None, names=["img", "v_id", "c_id"])
+class_names = 30671
+param = round(class_names/4)
+# === CLASSE VEICOLI (COCO classes) ===
+vehicle_classes = [2, 3, 5, 7]  # car, motorcycle, bus, truck
+
+# === PARAMETRI YOLO ===
+input_image_path = "low_traffic.jpeg"         # Percorso immagine di input
+output_folder = "cropped_objects"      # Cartella dove salvare i ritagli
+# === CREA CARTELLA DI OUTPUT SE NECESSARIO ===
+os.makedirs(output_folder, exist_ok=True)
+
+# CALCULATE FEATURES FOR GALLERY IMAGES
+# new vector without the query image (camera num 14)
+#camera_vect = [2, 30, 39, 102, 3, 172, 23, 137, 14, 79, 34, 78, 41, 51, 111, 110, 94, 139, 163, 122, 81]
+camera_vect = [200] 
+
+# === CARICA I MODELLI ===
+model_yolo = YOLO(obj_det_model)
+dinov2_vits14 = torch.hub.load("facebookresearch/dinov2", feat_extr_model)
+
+class DinoVisionTransformerClassifier(nn.Module):
+    def __init__(self):
+        super(DinoVisionTransformerClassifier, self).__init__()
+        self.transformer = deepcopy(dinov2_vits14)
+        self.classifier = nn.Sequential(nn.Linear(384, param), nn.ReLU(), nn.Linear(param, len(class_names)))
+
+    def forward(self, x, return_embeddings=False):
+        embeddings = self.transformer(x)
+        
+        if return_embeddings:
+            # Se richiesto, restituisce solo gli embeddings
+            return embeddings
+        
+        x = self.transformer.norm(embeddings)
+        x = self.classifier(x)
+        return x
+
+#Define transformations for the dataset 
+transform = transforms.Compose([ 
+    transforms.Resize((224, 224)), 
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+]) 
+
+# In caso di anomalia invia un messaggio all'end-point dello slave node
+# In caso di anomalia invia un messaggio all'end-point del MASTER node
+def report_reid():
+    """
+    In caso di anomalia invia un messaggio all'end-point del master.
+    Usa le env passate dal master:
+      - SCAN_SESSION_ID
+      - EDGE_DEVICE_ID
+      - MASTER_HTTP_URL
+      - SLAVE_TOKEN / EDGE_TOKEN
+    """
+    # === leggo le env dal container ===
+    session_id = os.getenv("SCAN_SESSION_ID")      # es. scan:1763242819
+    device_id  = os.getenv("EDGE_DEVICE_ID")       # es. edgeDevice01
+    end_point  = os.getenv("MASTER_HTTP_URL", "").split("/")[0]  # es. 128.203.65.69.nip.io
+
+    # token: prima provo SLAVE_TOKEN/EDGE_TOKEN, poi ADMIN_TOKEN (fallback)
+    token = (
+        os.getenv("SLAVE_TOKEN")
+        or os.getenv("EDGE_TOKEN")
+        or os.getenv("ADMIN_TOKEN")
+    )
+
+    print(f"[ReID] report_reid() called")
+    print(f"[ReID] SCAN_SESSION_ID={session_id}, EDGE_DEVICE_ID={device_id}")
+    print(f"[ReID] MASTER_HTTP_URL={end_point}, TOKEN_PRESENT={bool(token)}")
+
+    if not end_point:
+        print("[ReID] ERRORE: MASTER_HTTP_URL non impostata, non posso inviare il report")
+        return None
+
+    url = f"http://{end_point}/api/v1/scan/report/"
+
+    # Corpo della richiesta (payload) – QUI mettiamo session e device
+    data = {
+        "session_id": session_id,
+        "device_id": device_id,
+        "event": "detection",
+        "details": {
+            "message": "Vehicle detected!",
+        },
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    try:
+        response = requests.post(url, data=json.dumps(data), headers=headers, verify=False)
+        print(f"[ReID] Status code: {response.status_code}")
+        print(f"[ReID] Response body: {response.text}")
+        print(f"[ReID] URL: {url}")
+        return response
+    except Exception as e:
+        print(f"[ReID] ERRORE nella chiamata a {url}: {e}")
+        return None
+
+
+
+# def get_slave(task_id):
+#     # URL di destinazione
+#     url = "https://4.232.16.189.nip.io/status"
+    
+#     # Corpo della richiesta (payload)
+#     data = {
+#         "task_id": task_id,
+#     }
+    
+#     # Token di sicurezza (sostituisci con il tuo reale token)
+#     security_token = "my_super_very_secret_key_123!"
+
+        
+#     # Headers con token di autorizzazione
+#     headers = {
+#         "Content-Type": "application/json",
+#         "Authorization": f"Bearer {security_token}"
+#     }
+    
+#     # Disabilita i warning per certificati self-signed (facoltativo ma utile se il certificato HTTPS non è valido)
+#     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    
+#     # Invia la richiesta POST
+#     response = requests.post(url, data=json.dumps(data), headers=headers, verify=False)
+    
+#     # Stampa la risposta del server
+#     #print(f"Status code: {response.status_code}")
+#     try:
+#         # Converte la risposta in JSON (dizionario Python)
+#         slave_data = response.json()
+        
+#         # Estrai i valori desiderati
+#         security_token = slave_data.get("camera_token")
+#         slave_ep = slave_data.get("external_ip")
+#         #print("Security Token:", security_token)
+#         #print("External IP:", slave_ep)
+    
+#     except ValueError:
+#         print("Errore: la risposta non contiene JSON valido")
+#     #{"camera_node_ip":"192.168.1.500","camera_token":"","external_ip":"","status":"in-progress","timestamp":"1756804498.4074333"}
+    
+#     #print("Status code: 200OK! \n Message sent to flask-app-aks-nodepool1-17379992-vmss0000014-service Node")
+#     return security_token, slave_ep
+
+# *************************************************************************************************
+# Initialize the Flask application
+#pp = Flask(__name__)
+
+# *************************************************************************************************
+# route http posts to this method
+# @app.route('/run_reid', methods=['POST'])
+
+def run_reid():
+
+    # data = request.get_json()
+    # if not data:
+    #     return jsonify({'error': 'No JSON received'}), 400
+
+    # task_id = data['task_id']
+    #print(f"************************** TASK ID: {task_id}")
+    #task_id = "PROVA_ID_TEST_0987654321"
+    
+    # print(f"Task ID assigned from Master node: {task_id}")
+    # token, end_point = get_slave(task_id)
+    
+    # print("Query vehicle image received!")
+
+    # edge_id = os.getenv("EDGE_DEVICE_ID")
+    end_point = os.getenv("MASTER_HTTP_URL").split('/')[0] 
+    token = os.getenv("ADMIN_TOKEN")
+    # print(f"Info about slave node received from Master node! \n end_point= {end_point}, token={token}")
+    
+    # end_point = "128.203.65.69.nip.io/api/v1/scan/report".split('/')[0]
+    # token = "MySecureToken1234" 
+    # print(f"Info about slave node received from Master node! \n end_point= {end_point}, token={token}")
+
+    
+    # === CARICA IMMAGINE ===
+    img_bgr = cv2.imread(input_image_path)
+    if img_bgr is None:
+        raise FileNotFoundError(f"Immagine non trovata: {input_image_path}")
+    
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    
+    # === PREDIZIONE ===
+    results = model_yolo.predict(source=img_rgb,
+                            conf=0.35,
+                            classes=vehicle_classes,
+                            device=device,   # Cambia in "cuda" se hai una GPU
+                            verbose=False)
+      
+    # ********************* LOAD MODEL AND CALCULATE QUERY FEATURES *******************
+    #model_name = 'test_mini_EE1.pth'
+    model_name = '../../Demo_ReID/test_full.pth'
+    #model = torch.load(model_name).to(device)
+    model = torch.load(model_name, map_location=torch.device(device))
+
+        # ********************* QUERY *******************
+    testImage = '../../Demo_ReID/Demo_cameras/14/002791.jpg' #query image for veichle id 256
+
+    #Define a function that normalizes embeddings and add them to the index
+    def add_vector_to_index(embedding, index):
+        vector = embedding.detach().cpu().numpy()
+        vector = np.float32(vector)
+        #Normalize vector: important to avoid wrong results when searching
+        faiss.normalize_L2(vector)
+        index.add(vector)
+    
+    while True:        
+        df_filt = df.loc[df['img'].str.contains(testImage.split('/')[-1])]
+        img_id = df_filt['img'].values[0].split('/')[0]
+        
+        #query image
+        testimg_or = Image.open(testImage).convert('RGB')
+        testimg = transform(testimg_or).unsqueeze(0).to(device)  
+        
+        #Extract the features
+        with torch.no_grad():
+                outputs = model(testimg, return_embeddings=True)
+        
+        #Normalize the features before search
+        vector = outputs.detach().cpu().numpy()
+        vector = np.float32(vector)
+        faiss.normalize_L2(vector)
+        
+        # ********************* GALLERY *******************
+        
+        datasetPath =  '../../Demo_ReID/Demo_cameras/'
+        #print("Query image (vehicle id: ", img_id, ")")
+        print("Features extracted for query vehicle image.")
+        #display(testimg_or.resize((250,250)))
+    
+        for cam in camera_vect:
+            print("Analyzing video streaming from camera.")
+            # === ESTRAI BBOX E SALVA RITAGLI ===
+            boxes = results[0].boxes
+            if boxes is not None and boxes.xyxy is not None:
+                for i, box in enumerate(boxes.xyxy):
+                    x1, y1, x2, y2 = map(int, box[:4])
+                    cropped = img_rgb[y1:y2, x1:x2]
+                    cropped_pil = Image.fromarray(cropped)
+                    save_path = os.path.join(output_folder, f"object_{i+1}.jpg")
+                    cropped_pil.save(save_path)
+                    #print(f"Salvato: {save_path}")
+                print("Vehicle images detected on streaming.")
+            else:
+                print("No vehicle detected.")
+                break
+            #print("Camera id:", cam)
+            #Populate the images variable with all the images in the dataset folder
+            images = []
+        
+            for root, dirs, files in os.walk(datasetPath + str(cam)):
+                for file in files:
+                    if file.endswith('jpg'):
+                        images.append(root  + '/'+ file)
+        
+            #Create Faiss index using FlatL2 type with 384 features
+            index = faiss.IndexFlatL2(384) #small
+        
+            t0 = time.time()
+            for image_path in images:
+                img = Image.open(image_path).convert('RGB')
+                img = transform(img).unsqueeze(0).to(device)  
+                with torch.no_grad():
+                    outputs = model(img, return_embeddings=True)
+                add_vector_to_index(outputs, index)
+            
+            distances, indexes = index.search(vector, 5)
+            print("Features extracted for detected vehicles in frame.")
+            #print('distances:', distances, 'indexes:', indexes)
+
+            print("Features comparison for re-identification task.")
+            
+            dist_vec = []
+            id = 0
+            for i in indexes[0]:
+                im = images[i]
+                img_id = im.split('/')[-1]
+                dist_vec.append(distances[0, id])
+                id = id +1 
+            
+            if (distances[0, 0] < 1.0) and (st.variance(dist_vec) > 0.02):
+                bestIdx = indexes[0][0]
+                image = Image.open(images[bestIdx])
+                df_filt = df.loc[df['img'].str.contains(images[bestIdx].split('/')[-1])]
+                img_id = df_filt['img'].values[0].split('/')[0]
+                #print("Query vehicle found in camera num. ", cam, " (vehicle id:", img_id,")")
+                print("Query vehicle identified!") 
+                #display(image.resize((250,250)))
+                report_reid()
+            else:
+                bestIdx = indexes[0][0]
+                image = Image.open(images[bestIdx])
+                #print("Query vehicle NOT found in camera num. ", cam)
+                print("Query vehicle NOT identified!") 
+            print("\n")
+
+#**************************************************************************************************** 
+# #start flask app
+# print("Server ready!\n")
+
+# serve(app, host="0.0.0.0", port=5000)
+run_reid()

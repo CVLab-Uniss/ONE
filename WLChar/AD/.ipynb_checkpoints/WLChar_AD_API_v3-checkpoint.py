@@ -78,13 +78,14 @@ print("\n")
 print("********** START ANOMALY DETECTION TASK **********")
 
 # In caso di anomalia invia un messaggio all'end-point dello slave node
-def report_anomaly(object_type, token, end_point):
+def report_anomaly(object_type, token, end_point, edge_id):
     # URL di destinazione
     url = f"https://{end_point}:443/ingest"
     anomaly_type = object_type
     
     # Corpo della richiesta (payload)
     data = {
+        "edge_device_id": edge_id,
         "slave_node_ip": end_point.split('.')[0],
         "anomaly_type": object_type,
         "timestamp": "2025-06-03 15:25:12",
@@ -110,51 +111,6 @@ def report_anomaly(object_type, token, end_point):
     print("Response body:", response.text)
     #print("Status code: 200OK! \n Message sent to flask-app-aks-nodepool1-17379992-vmss0000014-service Node")
     return response
-
-# def get_slave(task_id):
-#     # URL di destinazione
-#     #url = "https://4.232.16.189.nip.io/status"
-#     url = "https://135.222.251.140:443/status"
-    
-#     # Corpo della richiesta (payload)
-#     data = {
-#         "task_id": task_id,
-#     }
-    
-#     # Token di sicurezza (sostituisci con il tuo reale token)
-#     security_token = "my_super_very_secret_key_123!"
-
-        
-#     # Headers con token di autorizzazione
-#     headers = {
-#         "Content-Type": "application/json",
-#         "Authorization": f"Bearer {security_token}"
-#     }
-    
-#     # Disabilita i warning per certificati self-signed (facoltativo ma utile se il certificato HTTPS non è valido)
-#     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    
-#     # Invia la richiesta POST
-#     response = requests.post(url, data=json.dumps(data), headers=headers, verify=False)
-    
-#     # Stampa la risposta del server
-#     #print(f"Status code: {response.status_code}")
-#     try:
-#         # Converte la risposta in JSON (dizionario Python)
-#         slave_data = response.json()
-        
-#         # Estrai i valori desiderati
-#         security_token = slave_data.get("camera_token")
-#         slave_ep = slave_data.get("external_ip")
-#         #print("Security Token:", security_token)
-#         #print("External IP:", slave_ep)
-    
-#     except ValueError:
-#         print("Errore: la risposta non contiene JSON valido")
-#     #{"camera_node_ip":"192.168.1.500","camera_token":"","external_ip":"","status":"in-progress","timestamp":"1756804498.4074333"}
-    
-#     #print("Status code: 200OK! \n Message sent to flask-app-aks-nodepool1-17379992-vmss0000014-service Node")
-#     return security_token, slave_ep
 
 # Funzioni di pre-processing
 def add_margin(pil_img, top, right, bottom, left, color):
@@ -200,7 +156,8 @@ def run_ad():
     end_point = os.getenv("SLAVE_URL") 
     token = os.getenv("SLAVE_TOKEN")
     # print(f"Info about slave node received from Master node! \n end_point= {end_point}, token={token}")
-    
+
+    # edge_id= "edge_1"
     # end_point = "slave-gateway-oristano-01.128.203.65.69.nip.io"
     # token = "edge-temporary-token" 
     # print(f"Info about slave node received from Master node! \n end_point= {end_point}, token={token}")
@@ -273,7 +230,7 @@ def run_ad():
                 for t in res:
                     label = int(t)
                     print(f"Anomaly detected: {model.names[label]}")
-                    report_anomaly(label, token, end_point)
+                    report_anomaly(label, token, end_point, edge_id)
             else:
                  print("No anomaly detected")
         
