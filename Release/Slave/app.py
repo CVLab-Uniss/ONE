@@ -114,6 +114,7 @@ def _ingest_common(payload: Dict[str, Any]):
         payload.get("device_id")
         or payload.get("EDGE_DEVICE_ID")
         or payload.get("edge_id")
+        or payload.get("edge_device_id")
     )
 
     # Fallback se non c'è device_id nel payload
@@ -159,7 +160,11 @@ def _ingest_common(payload: Dict[str, Any]):
             )
 
     # 2) se non è MUTED/VRI, o non abbiamo device_id → log normale
-    logger.info("Ingest payload (zone=%s): %s", ZONE, payload)
+    logger.info("[ingest-debug] payload keys=%s", list(payload.keys()))
+    logger.info("[ingest-debug] computed device_id=%r", device_id)
+    logger.info("[ingest-debug] registry_keys=%s", list(edge_registry.keys()))
+    # Log “pulito” del payload che arriva dal workload
+    logger.info("[workload-ingest] payload=%s", json.dumps(payload, ensure_ascii=False))
 
     if SLACK_WORKLOAD_WEBHOOK_URL:
         try:
@@ -169,9 +174,16 @@ def _ingest_common(payload: Dict[str, Any]):
                 f"*Payload*:",
                 "```" + json.dumps(payload, ensure_ascii=False)[:1500] + "```",
             ]
-            send_slack_safe("\n".join(text_lines))
+            text = "\n".join(text_lines)
+            
+
+            # 👇 LOG identico a quello che invii su Slack
+            logger.info("[slack-workload] %s", text)
+
+            send_slack_safe(text)
         except Exception:
             logger.exception("Slack workload ingest notify failed")
+
 
     return jsonify({"ok": True, "received": True}), 200
 

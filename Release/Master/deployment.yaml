@@ -18,7 +18,7 @@ spec:
       serviceAccountName: master-node-app-sa
       containers:
       - name: master-node-app
-        image: mfadd/master-node:v275-iot-deployment
+        image: mfadd/master-node:v277-iot-deployment
         imagePullPolicy: Always
         command: ["/usr/local/bin/python"]
         args:
@@ -50,7 +50,7 @@ spec:
         - name: DEFAULT_LOG_LEVEL
           value: "INFO"
         - name: SLAVE_IMAGE
-          value: "mfadd/slave-node:v16-iotedge-gateway"
+          value: "mfadd/slave-node:v18-iotedge-gateway"
         - name: SLACK_WORKLOAD_WEBHOOK_URL
           value: "https://hooks.slack.com/services/T09SDJYMACW/B09T1KDRGAV/XXXXXX"
         - name: SLAVE_CONTAINER_PORT
