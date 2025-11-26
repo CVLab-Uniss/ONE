@@ -34,7 +34,7 @@ spec:
         - name: SLAVE_SHARED_TOKEN
           value: "edge-temporary-token"
         - name: IOTHUB_CONNECTION_STRING
-          value: "XXXXXX"
+          value: "XXXXXXX"
         - name: K8S_TARGET_NAMESPACE
           value: "dev"
         - name: MONGO_URI
@@ -52,13 +52,13 @@ spec:
         - name: SLAVE_IMAGE
           value: "mfadd/slave-node:v16-iotedge-gateway"
         - name: SLACK_WORKLOAD_WEBHOOK_URL
-          value: "https://hooks.slack.com/services/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"
+          value: "https://hooks.slack.com/services/T09SDJYMACW/B09T1KDRGAV/XXXXXX"
         - name: SLAVE_CONTAINER_PORT
           value: "8080"
         - name: HEALTHCHECK_TIMEOUT
           value: "25"
         - name: SLACK_WEBHOOK_URL
-          value: "https://hooks.slack.com/services/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"
+          value: "https://hooks.slack.com/services/T09SDJYMACW/B09S0SJ1YTH/XXXXXX"
         ports:
         - containerPort: 5000
           protocol: TCP
