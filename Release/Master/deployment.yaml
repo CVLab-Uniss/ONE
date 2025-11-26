@@ -18,7 +18,7 @@ spec:
       serviceAccountName: master-node-app-sa
       containers:
       - name: master-node-app
-        image: mfadd/master-node:v278-iot-deployment
+        image: mfadd/master-node:v279-iot-deployment
         imagePullPolicy: Always
         command: ["/usr/local/bin/python"]
         args:

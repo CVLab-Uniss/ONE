@@ -1321,69 +1321,22 @@ def ensure_detection_job_module_in_edgeagent(
     else:
         current_app.logger.info("[detection-job] manifest pushed to %s", device_id)
 
-
-def push_base_workload_manifest(device_id: str, image: str, env: dict):
-    """Ripristina SOLO il workload base running e rimuove/ferma il job lato desired."""
+def push_base_workload_manifest(device_id: str, image: str, env: Optional[dict] = None):
     if has_app_context():
         log = current_app.logger
     else:
         log = logging.getLogger("master-node")
 
     create_options = {"Cmd": ["bash", "DemoAD_start.sh"]}
+
+    env = env or {}
 
     env_base = {
         "EDGE_DEVICE_ID": device_id,
         "SLAVE_URL": env.get("SLAVE_URL", ""),
         "SLAVE_TOKEN": env.get("SLAVE_TOKEN", SLAVE_SHARED_TOKEN or ""),
-        "MASTER_HTTP_URL": env.get("MASTER_HTTP_URL", ""),
-        "SLACK_WORKLOAD_WEBHOOK_URL": SLACK_WORKLOAD_WEBHOOK_URL,
-    }
-
-    modules = {
-        DEFAULT_WORKLOAD_NAME: {
-            "version": "1.0",
-            "type": "docker",
-            "status": "running",
-            "restartPolicy": "always",
-            "settings": {
-                "image": image,
-                "createOptions": json.dumps(create_options),
-            },
-            "env": {k: {"value": v} for k, v in env_base.items()},
-        }
-        # NOTA: nessun myDetectionJob qui → viene rimosso dal desired
-    }
-
-    modules_content = {
-        "$edgeAgent": {
-            "properties.desired": {
-                "schemaVersion": "1.1",
-                "modules": modules,
-            }
-        }
-    }
-
-    ok, err = push_manifest_to_iothub(device_id, modules_content)
-    if ok:
-        log.info("[revert] base workload back on %s (myWorkloadModule running, job rimosso)", device_id)
-    else:
-        log.error("[revert] push failed for %s: %s", device_id, err)
-
-
-def push_base_workload_manifest(device_id: str, image: str):
-    if has_app_context():
-        log = current_app.logger
-    else:
-        log = logging.getLogger("master-node")
-
-    create_options = {"Cmd": ["bash", "DemoAD_start.sh"]}
-
-    env_base = {
-        "EDGE_DEVICE_ID": device_id,
-        "SLAVE_URL": "",
-        "SLAVE_TOKEN": SLAVE_SHARED_TOKEN or "",
-        "MASTER_HTTP_URL": MASTER_BASE_HOST,
-        "SLACK_WORKLOAD_WEBHOOK_URL": SLACK_WORKLOAD_WEBHOOK_URL,  # 👈 rimetti Slack qui
+        "MASTER_HTTP_URL": env.get("MASTER_HTTP_URL", MASTER_BASE_HOST),
+        "SLACK_WORKLOAD_WEBHOOK_URL": env.get("SLACK_WORKLOAD_WEBHOOK_URL", SLACK_WORKLOAD_WEBHOOK_URL),
     }
 
     modules = {
@@ -1423,8 +1376,6 @@ def push_base_workload_manifest(device_id: str, image: str):
             send_slack_safe(
                 f":x: Revert *fallito* su `{device_id}` – errore push manifest: `{err}`"
             )
-
-
 
 def push_detection_job_to_device(device_id: str, session_id: str, job_image: str, slave_url: str):
     """
