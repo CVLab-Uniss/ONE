@@ -110,7 +110,128 @@ push_manifest_to_iothub(device_id, modules_content)
 which sends the manifest through IoT Hub’s REST API, updating the desired properties.
 
 
+1.5 Master Reusability
+Put everything in a Git repo with clear folders.
 
+Recommended structure:
+
+infra/
+  aks/
+    bicep-or-terraform/       # if you feel like terraforming
+k8s/
+  base/
+    namespace-dev.yaml
+    ingress-nginx/...
+    mongo/...
+    redis/...
+  apps/
+    master/
+      deployment.yaml
+      service.yaml
+      ingress.yaml
+      configmap.yaml
+      secret.example.yaml
+    slave/                    # if you also want a default slave
+      README.md               # but in practice slaves are created by the master
+docs/
+  bootstrap-edge.md
+  scan-api.md
+
+
+When you want to replicate:
+
+clone the repo
+
+modify only the *-config.yaml / *-secret.yaml files for the new environment
+
+kubectl apply -f k8s/base
+
+kubectl apply -f k8s/apps/master
+
+
+Operational sequence for a new environment
+Create Azure resources
+
+(You can do it manually from the Azure Portal the first time, then script it with az-cli once you're comfortable.)
+
+Resource group
+
+az group create -n rg-one-dev -l westeurope
+
+
+IoT Hub
+
+az iot hub create \
+  -n camera-node-agent \
+  -g rg-one-dev \
+  --sku S1
+
+
+AKS
+
+az aks create \
+  -g rg-one-dev \
+  -n aks-one-dev \
+  --node-count 1 \
+  --generate-ssh-keys
+
+
+Fetch K8s credentials
+
+az aks get-credentials -g rg-one-dev -n aks-one-dev
+
+
+Bootstrap the K8s cluster
+
+Namespace
+
+kubectl create namespace dev
+
+
+Ingress controller NGINX (e.g. via Helm)
+
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+
+helm install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace dev
+
+
+Get the ingress public IP
+
+kubectl -n dev get svc
+# look for the LoadBalancer of the ingress
+
+
+Configure DNS / BASE_DOMAIN
+
+In your case you’re using 128.203.65.69.nip.io → convenient because you don’t need to configure DNS.
+
+For other environments, decide whether to:
+
+keep using X.X.X.X.nip.io, or
+
+configure your own domain (e.g. one-dev.mydomain.com).
+
+The chosen value must be placed in BASE_DOMAIN (master’s ConfigMap).
+
+
+Deploy base services
+
+Keep reusable YAMLs in k8s/base.
+Example:
+
+kubectl -n dev apply -f k8s/base/mongo/
+kubectl -n dev apply -f k8s/base/redis/
+
+Deployment (reusable for every environment, no code changes):
+
+Your current Deployment only needs to be updated so that it pulls values from the ConfigMap/Secret, instead of having them written “in clear text”.
+
+Apply everything:
+
+kubectl -n dev apply -f k8s/apps/master/
+kubectl -n dev get pods
 
 
 2. Slave Gateway
@@ -142,6 +263,21 @@ When the master calls /api/v1/edges_nearby, each slave returns the list of regis
 Essentially, the slave is the local registry and ingestion point for its area.
 
 
+2.3 Slave reusability
+
+You don’t need to manually create the slaves (except maybe one default one if you prefer);
+the master creates them via ensure_slave_gateway(zone) when:
+
+you perform an edge bootstrap, or
+
+you run a scan in a new zone.
+
+What you must ensure:
+
+SLAVE_IMAGE in the master points to the correct version (e.g. mfadd/slave-node:v16-iotedge-gateway)
+
+BASE_DOMAIN is consistent:
+slave-gateway-<zone>-01.<BASE_DOMAIN> must resolve to the ingress IP.
 
 
 
