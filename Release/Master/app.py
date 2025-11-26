@@ -68,6 +68,8 @@ SCAN_DEFAULT_TIMEOUT_S = 300
 SCAN_HARD_TIMEOUT_S = int(os.getenv("SCAN_HARD_TIMEOUT_S", "400"))
 
 SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL", "").strip()
+SLACK_WORKLOAD_WEBHOOK_URL = os.getenv("SLACK_WORKLOAD_WEBHOOK_URL", "").strip()
+
 
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
@@ -691,6 +693,10 @@ def _make_gateway_deployment(deploy_name: str, zone: str) -> Dict[str, Any]:
                             "env": [
                                 {"name": "ZONE", "value": zone},
                                 {"name": "LOG_LEVEL", "value": "INFO"},
+                                {
+                                    "name": "SLACK_WORKLOAD_WEBHOOK_URL",
+                                    "value": SLACK_WORKLOAD_WEBHOOK_URL,
+                                },
                             ],
                             "ports": [{"containerPort": 8080}],
                             "readinessProbe": {
@@ -1330,6 +1336,7 @@ def push_base_workload_manifest(device_id: str, image: str, env: dict):
         "SLAVE_URL": env.get("SLAVE_URL", ""),
         "SLAVE_TOKEN": env.get("SLAVE_TOKEN", SLAVE_SHARED_TOKEN or ""),
         "MASTER_HTTP_URL": env.get("MASTER_HTTP_URL", ""),
+        "SLACK_WORKLOAD_WEBHOOK_URL": SLACK_WORKLOAD_WEBHOOK_URL,
     }
 
     modules = {
@@ -1364,7 +1371,6 @@ def push_base_workload_manifest(device_id: str, image: str, env: dict):
 
 
 def push_base_workload_manifest(device_id: str, image: str):
-    """Ripristina il workload base running e rimuove/ferma il job lato desired."""
     if has_app_context():
         log = current_app.logger
     else:
@@ -1376,7 +1382,8 @@ def push_base_workload_manifest(device_id: str, image: str):
         "EDGE_DEVICE_ID": device_id,
         "SLAVE_URL": "",
         "SLAVE_TOKEN": SLAVE_SHARED_TOKEN or "",
-        "MASTER_HTTP_URL": ""
+        "MASTER_HTTP_URL": MASTER_BASE_HOST,
+        "SLACK_WORKLOAD_WEBHOOK_URL": SLACK_WORKLOAD_WEBHOOK_URL,  # 👈 rimetti Slack qui
     }
 
     modules = {
@@ -1391,7 +1398,6 @@ def push_base_workload_manifest(device_id: str, image: str):
             },
             "env": {k: {"value": v} for k, v in env_base.items()},
         }
-        # niente myDetectionJob → viene rimosso dal desired
     }
 
     modules_content = {
@@ -1440,6 +1446,8 @@ def push_detection_job_to_device(device_id: str, session_id: str, job_image: str
         # esattamente come quando lo lanciavi a mano:
         #  MASTER_HTTP_URL=128.203.65.69.nip.io
         "MASTER_HTTP_URL": MASTER_BASE_HOST,
+        # webhook Slack usato DAL CONTAINER per notificare
+        "SLACK_WORKLOAD_WEBHOOK_URL": SLACK_WORKLOAD_WEBHOOK_URL,
     }
 
     log.info("[scan] pushing detection job to %s with image=%s", device_id, job_image)
@@ -1483,6 +1491,7 @@ def schedule_revert_to_workload(device_id: str, slave_url: str, timeout_s: int, 
         "SLAVE_URL": slave_url_for_container(slave_url),
         "SLAVE_TOKEN": SLAVE_SHARED_TOKEN or "",
         "MASTER_HTTP_URL": MASTER_BASE_HOST,
+        "SLACK_WORKLOAD_WEBHOOK_URL": SLACK_WORKLOAD_WEBHOOK_URL,
     }
 
     def _worker():
@@ -1823,7 +1832,8 @@ def api_bootstrap_edge():
         "EDGE_DEVICE_ID": device_id,
         "SLAVE_URL": slave_host_only,       # SENZA http://
         "SLAVE_TOKEN": SLAVE_SHARED_TOKEN,
-        "MASTER_HTTP_URL": master_host_only # SENZA schema
+        "MASTER_HTTP_URL": master_host_only, # SENZA schema
+        "SLACK_WORKLOAD_WEBHOOK_URL": SLACK_WORKLOAD_WEBHOOK_URL
     }
 
     extra_env = workload.get("env")
@@ -2210,6 +2220,7 @@ def api_scan_report():
                 "SLAVE_URL": slave_url_for_container(slave_url),
                 "SLAVE_TOKEN": SLAVE_SHARED_TOKEN or "",
                 "MASTER_HTTP_URL": MASTER_BASE_HOST,
+                "SLACK_WORKLOAD_WEBHOOK_URL": SLACK_WORKLOAD_WEBHOOK_URL,
             }
 
             try:
