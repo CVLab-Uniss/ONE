@@ -217,9 +217,9 @@ curl -X POST "http://128.203.65.69.nip.io/api/v1/scan/start" \
 # 7. Master Global Variables
 ```
 DEFAULT_WORKLOAD_NAME = "myWorkloadModule"
-DEFAULT_WORKLOAD_IMAGE = "pietroruiu/one-project:wlchar_ad_api_v2_cpu"
+DEFAULT_WORKLOAD_IMAGE = "pietroruiu/one-project:wlchar_ad_api_v3_cpu"
 DETECTION_JOB_MODULE = "myDetectionJob"
-DETECTION_JOB_IMAGE = "pietroruiu/one-project:wlchar_reid_api_v2_cpu"
+DETECTION_JOB_IMAGE = "pietroruiu/one-project:wlchar_reid_api_v3_cpu"
 MASTER_BASE_HOST = "128.203.65.69.nip.io"
 MASTER_REPORT_URL = f"{MASTER_BASE_HOST}/api/v1/scan/report"
 SCAN_DEFAULT_TIMEOUT_S = 180
