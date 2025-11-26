@@ -1,0 +1,111 @@
+# ===== Static Components =====
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+
+---
+# 1. SERVICE - Porta 80 esposta all'Ingress
+apiVersion: v1
+kind: Service
+metadata:
+  name: master-node-app-service
+  namespace: dev # Namespace aggiunto per coerenza
+  labels:
+    app: master-node-app
+spec:
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 80           # CRITICO: La porta esposta al mondo esterno (Ingress) DEVE essere 80
+      targetPort: 5000   # Inoltra alla porta 5000 del Pod Flask/Gunicorn
+  selector:
+    app: master-node-app
+
+---
+# ===== Template for Dynamic Components =====
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: master-https-cert
+  namespace: dev # Namespace aggiunto per coerenza
+spec:
+  secretName: master-https-tls
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+  commonName: "aks-temporary-cert"
+  dnsNames:
+    - "128.203.65.69.nip.io"
+    - "localhost"
+  ipAddresses:
+    - "128.203.65.69"
+  privateKey:
+    algorithm: RSA
+    size: 2048
+
+---
+# 2. INGRESS - Rotte aggiornate con PathType: Exact e Timeout
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: master-node-ingress
+  namespace: dev # Namespace aggiunto per coerenza
+  annotations:
+    # Richiesta di certificato TLS
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    
+    # Timeout aumentati a 3 minuti (180s) per le operazioni lunghe di deployment
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    
+spec:
+  ingressClassName: nginx 
+  tls:
+    - hosts:
+        - "128.203.65.69.nip.io"
+      secretName: master-https-tls
+  rules:
+    - host: "128.203.65.69.nip.io"
+      http:
+        paths:
+          # Rotta POST per il deployment
+          - path: /deployment/workload
+            pathType: ImplementationSpecific 
+            backend:
+              service:
+                name: master-node-app-service
+                port:
+                  number: 80 # Punta alla porta 80 esposta dal Service
+          
+          # Rotta GET per la diagnostica IoT Hub (NUOVA)
+          - path: /iothub-test
+            pathType: Exact
+            backend:
+              service:
+                name: master-node-app-service
+                port:
+                  number: 80
+
+          # Rotta GET per lo stato (Health Check) - USARE Exact
+          - path: /status
+            pathType: Exact # Cambiato da ImplementationSpecific a Exact
+            backend:
+              service:
+                name: master-node-app-service
+                port:
+                  number: 80
+                  
+          # Rotta GET per gli slave - USARE Exact
+          - path: /active-slaves
+            pathType: Exact # Cambiato da ImplementationSpecific a Exact
+            backend:
+              service:
+                name: master-node-app-service
+                port:
+                  number: 80

@@ -1,0 +1,36 @@
+﻿# 1. Definizione del Role
+# Questo Role concede i permessi necessari all'applicazione Master Node.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: master-node-manager
+  namespace: dev # Importante: Il Role deve essere creato nello stesso namespace del pod.
+rules:
+- apiGroups: [""] # "" si riferisce alle risorse core (come i pods)
+  resources: ["pods", "pods/log", "services"]
+  verbs: ["get", "list", "watch"] # Permessi per leggere lo stato (get, list, watch)
+- apiGroups: ["apps"] # Gruppo API per i Deployment
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"] # Permessi completi per la gestione dei deployment
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+
+# 2. Definizione del RoleBinding
+# Questo RoleBinding assegna il Role 'master-node-manager' al ServiceAccount di default 
+# nel namespace 'dev', che è quello usato dal tuo pod.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: master-node-binding
+  namespace: dev # Importante: Il RoleBinding deve essere nello stesso namespace
+subjects:
+- kind: ServiceAccount
+  name: default # Il ServiceAccount utilizzato dal tuo pod (di default è 'default')
+  namespace: dev # Nello stesso namespace del pod
+roleRef:
+  kind: Role
+  name: master-node-manager # Riferimento al Role creato sopra
+  apiGroup: rbac.authorization.k8s.io

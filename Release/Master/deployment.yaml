@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: master-node-app-deployment-v72-final
+  namespace: dev
+  labels:
+    app: master-node-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: master-node-app
+  template:
+    metadata:
+      labels:
+        app: master-node-app
+    spec:
+      serviceAccountName: master-node-app-sa
+      containers:
+      - name: master-node-app
+        image: mfadd/master-node:v275-iot-deployment
+        imagePullPolicy: Always
+        command: ["/usr/local/bin/python"]
+        args:
+          [
+            "-m", "gunicorn",
+            "-w", "1",
+            "--bind", "0.0.0.0:5000",
+            "app:app"
+          ]
+        env:
+        - name: ADMIN_TOKEN
+          value: "MySecureToken1234"
+        - name: SLAVE_SHARED_TOKEN
+          value: "edge-temporary-token"
+        - name: IOTHUB_CONNECTION_STRING
+          value: "XXXXXX"
+        - name: K8S_TARGET_NAMESPACE
+          value: "dev"
+        - name: MONGO_URI
+          value: "mongodb://mongo-service:27017/"
+        - name: MONGO_DB_NAME
+          value: "one_project_db"
+        - name: BASE_DOMAIN
+          value: "128.203.65.69.nip.io"
+        - name: DEFAULT_WORKLOAD_IMAGE
+          value: "pietroruiu/one-project:wlchar_ad_api_v3_cpu"
+        - name: DEFAULT_WORKLOAD_NAME
+          value: "wlchar_ad_api_v2_cpu"
+        - name: DEFAULT_LOG_LEVEL
+          value: "INFO"
+        - name: SLAVE_IMAGE
+          value: "mfadd/slave-node:v16-iotedge-gateway"
+        - name: SLACK_WORKLOAD_WEBHOOK_URL
+          value: "https://hooks.slack.com/services/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"
+        - name: SLAVE_CONTAINER_PORT
+          value: "8080"
+        - name: HEALTHCHECK_TIMEOUT
+          value: "25"
+        - name: SLACK_WEBHOOK_URL
+          value: "https://hooks.slack.com/services/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"
+        ports:
+        - containerPort: 5000
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+            scheme: HTTP
+            httpHeaders:
+            - name: Authorization
+              value: "Bearer MySecureToken1234"
+          initialDelaySeconds: 40
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+            scheme: HTTP
+            httpHeaders:
+            - name: Authorization
+              value: "Bearer MySecureToken1234"
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 3
+          failureThreshold: 6
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"

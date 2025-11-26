@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: master-node-app-deployment-v72-final
+  namespace: dev
+  labels:
+    app: master-node-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: master-node-app
+  template:
+    metadata:
+      labels:
+        app: master-node-app
+    spec:
+      serviceAccountName: master-node-app-sa
+      containers:
+        - name: master-node-app
+          image: mfadd/master-node:v141-iot-deployment   # <— aggiorna quando fai nuove build
+          imagePullPolicy: Always
+          command: ["/usr/local/bin/python"]
+          args: ["-m","gunicorn","--bind","0.0.0.0:5000","app:app"]
+          ports:
+            - containerPort: 5000
+          env:
+            - name: ADMIN_TOKEN
+              value: "MySecureToken1234"
+            - name: IOTHUB_CONNECTION_STRING
+              value: "HostName=camera-node-agent.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=XXXXX"
+            - name: K8S_TARGET_NAMESPACE
+              value: "dev"
+            - name: MONGO_URI
+              value: "mongodb://mongo-service:27017/"
+            - name: MONGO_DB_NAME
+              value: "one_project_db"
+            - name: BASE_DOMAIN
+              value: "128.203.65.69.nip.io"  # se vuoi Ingress con nip.io; vuoto = niente Ingress
+            # DEFAULT per ogni nuovo device (niente più edit del JSON)
+            - name: DEFAULT_WORKLOAD_IMAGE
+              value: "mfadd/one-project:wlchar_ad_api_cpu_v2"
+            - name: DEFAULT_WORKLOAD_NAME
+              value: "wlchar_ad_api_cpu_v2"
+            - name: DEFAULT_LOG_LEVEL
+              value: "INFO"
+            - name: SLAVE_IMAGE
+              value: "mfadd/one-project:slave-gateway"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+              httpHeaders:
+                - name: Authorization
+                  value: "Bearer MySecureToken1234"
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+              httpHeaders:
+                - name: Authorization
+                  value: "Bearer MySecureToken1234"
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: master-node-app-service
+  namespace: dev
+  labels:
+    app: master-node-app
+spec:
+  type: LoadBalancer            # <— definitivo (niente patch)
+  selector:
+    app: master-node-app
+  ports:
+    - port: 80
+      targetPort: 5000
+      protocol: TCP

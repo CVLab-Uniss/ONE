@@ -1,0 +1,12 @@
+flask==3.0.3
+gunicorn==22.0.0
+requests~=2.32.3
+geopy
+celery~=5.4.0
+redis
+flask_limiter
+PyJWT~=2.10.1
+cryptography~=44.0.1
+kubernetes~=31.0.0
+azure-iot-device
+redis-sentinel

@@ -1,0 +1,56 @@
+﻿apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: selfsigned-issuer
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+    nginx.ingress.kubernetes.io/content-security-policy: default-src 'self'
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/hsts: "true"
+    nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
+    nginx.ingress.kubernetes.io/hsts-max-age: "31536000"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/x-content-type-options: nosniff
+    nginx.ingress.kubernetes.io/x-frame-options: DENY
+    nginx.ingress.kubernetes.io/x-xss-protection: 1; mode=block
+  name: flask-app-aks-nodepool1-40145858-vmss000001-ingress
+  namespace: default
+spec:
+  rules:
+  - host: flask-app-aks-nodepool1-40145858-vmss000001-service.128.203.65.69.nip.io
+    http:
+      paths:
+      - backend:
+          service:
+            name: master-node-app-service
+            port:
+              number: 80
+        path: /report_anomaly
+        pathType: Prefix
+      - backend:
+          service:
+            name: master-node-app-service
+            port:
+              number: 80
+        path: /auth/camera/renew
+        pathType: Prefix
+      - backend:
+          service:
+            name: master-node-app-service
+            port:
+              number: 80
+        path: /wait_for_response
+        pathType: Prefix
+      # REGOLA AGGIUNTA PER L'ENDPOINT /deploy
+      - backend:
+          service:
+            name: master-node-app-service
+            port:
+              number: 80
+        path: /deploy
+        pathType: Prefix
+  tls:
+  - hosts:
+    - flask-app-aks-nodepool1-40145858-vmss000001-service.128.203.65.69.nip.io
+    secretName: flask-app-aks-nodepool1-40145858-vmss000001-tls
